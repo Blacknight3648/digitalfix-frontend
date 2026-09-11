@@ -1,12 +1,24 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
 import { routes } from './app.routes';
-import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
+// Importa aquí tus interceptores globales si ya los creaste (ej. para tokens JWT)
+// import { authInterceptor } from './core/interceptors/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideBrowserGlobalErrorListeners(),
-    provideRouter(routes), provideClientHydration(withEventReplay())
+    // 1. Optimización de detección de cambios de Angular
+    provideZoneChangeDetection({ eventCoalescing: true }),
+
+    // 2. Configuración de Rutas con vinculación de parámetros a Inputs (muy útil y limpio)
+    provideRouter(routes, withComponentInputBinding()),
+
+    // 3. Configuración del Cliente HTTP con soporte para Interceptores globales
+    provideHttpClient(
+      withInterceptors([
+        // authInterceptor // Descomenta cuando crees tu interceptor de seguridad
+      ])
+    )
   ]
 };
