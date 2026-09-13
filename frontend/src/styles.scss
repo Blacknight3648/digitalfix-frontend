@@ -1,1 +1,29 @@
 /* You can add global styles to this file, and also import other style files */
+
+:root {
+  --negro: #000000;
+  --gris-fondo: #d9d9d9;
+  --blanco: #ffffff;
+  --texto-tenue: #9a9a9a;
+  /* Texto secundario sobre fondo blanco (labels, metadata): #4b5563 da ~7.5:1
+     de contraste, muy por sobre el mínimo AA de 4.5:1 para texto normal. */
+  --texto-secundario: #4b5563;
+  --borde: #e6e6e6;
+
+  --creada-bg: #ececec;   --creada-fg: #555555;
+  --asignada-bg: #e3edff; --asignada-fg: #1d4ed8;
+  --desplazo-bg: #fff2d9; --desplazo-fg: #92600a;
+  --ejecucion-bg: #efe3ff; --ejecucion-fg: #6b21a8;
+  --cerrada-bg: #dff5e6;  --cerrada-fg: #1a7f37;
+  --cancelada-bg: #fde3e3; --cancelada-fg: #b42318;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1a1a1a;
+}
