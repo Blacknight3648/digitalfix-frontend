@@ -1,17 +1,91 @@
-<header>
-    <Title>Página principal</Title>
-</header>
+<div class="card">
 
-<section class="main-section">
-    <h1>Bienvenido</h1>
-    <p>Bienvenido a la plataforma</p>
-</section>
-
-<nav class="main-nav">
-    <div class="main-nav-container">
-        <a href="#">Inicio</a>
-        <a href="#">Productos</a>
-        <a href="#">Servicios</a>
-        <a href="#">Contacto</a>
+  <div class="card-header">
+    <div>
+      <h2>Órdenes de trabajo</h2>
+      <p>{{ orders.length }} órdenes en la red · vista según tu rol</p>
     </div>
-</nav>
+    <div class="header-actions">
+      @if (canCreateOrder()) {
+        <button class="btn-primary" type="button" (click)="onNuevaOrden()">+ Nueva orden</button>
+      }
+    </div>
+  </div>
+
+  <div class="filters">
+    <input type="search" placeholder="Buscar por cliente o N° de orden" [(ngModel)]="searchTerm">
+    <select [(ngModel)]="statusFilter">
+      <option value="">Todos los estados</option>
+      @for (status of statuses; track status) {
+        <option [value]="status">{{ statusLabel[status] }}</option>
+      }
+    </select>
+    <input type="date" [(ngModel)]="dateFrom">
+    <input type="date" [(ngModel)]="dateTo">
+  </div>
+
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>N°</th>
+        <th>Cliente</th>
+        <th>Servicio</th>
+        <th>Técnico</th>
+        <th>Estado</th>
+        <th>Creada</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (order of filteredOrders; track order.id) {
+        <tr>
+          <td class="id-cell">#{{ order.id }}</td>
+          <td>{{ order.cliente }}</td>
+          <td>{{ order.servicio }}</td>
+          <td>{{ order.tecnico ?? '—' }}</td>
+          <td><span class="badge" [class]="statusCssClass[order.estado]">{{ statusLabel[order.estado] }}</span></td>
+          <td>{{ order.fechaCreacion | date:'d MMM, HH:mm' }}</td>
+          <td>
+            <div class="row-actions">
+              @if (canOperate() && nextActionFor(order)) {
+                <button class="btn-primary" type="button" (click)="advanceStatus(order)">{{ nextActionFor(order) }}</button>
+              }
+              @if (canCancel(order)) {
+                <button class="btn-ghost" type="button" (click)="cancelOrder(order)">Cancelar</button>
+              }
+              <button class="btn-secondary" type="button" (click)="openDetail(order)">Ver detalle</button>
+            </div>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="7" class="empty-hint">No hay órdenes que coincidan con los filtros.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+  </div>
+
+</div>
+
+<!-- Modal detalle / timeline -->
+@if (selectedOrder) {
+  <div class="overlay open" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Orden #{{ selectedOrder.id }}</h3>
+        <span class="material-icons" (click)="closeModal()">close</span>
+      </div>
+      <p class="modal-sub">{{ selectedOrder.cliente }} · {{ selectedOrder.servicio }}</p>
+      <ul class="timeline">
+        @for (evento of selectedOrder.timeline; track $index) {
+          <li>
+            <div class="evento">{{ evento.descripcion }}</div>
+            <div class="meta">{{ evento.actor }} · {{ evento.fecha | date:'d MMM, HH:mm' }}</div>
+          </li>
+        }
+      </ul>
+    </div>
+  </div>
+}

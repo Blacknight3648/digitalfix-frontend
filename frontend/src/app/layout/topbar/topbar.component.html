@@ -1,0 +1,25 @@
+<div class="topbar">
+  <div class="topbar-title">
+    <span class="breadcrumb">DigitalFix</span>
+    <span class="material-icons breadcrumb-sep">chevron_right</span>
+    <span class="current-page">{{ pageTitle() }}</span>
+  </div>
+
+  <div class="topbar-actions">
+    <select
+      class="role-select"
+      title="Simular rol (temporal, hasta tener App Roles en Azure AD)"
+      [ngModel]="currentRole"
+      (ngModelChange)="onRoleChange($event)"
+    >
+      @for (role of roles; track role) {
+        <option [value]="role">Ver como {{ roleLabel[role] }}</option>
+      }
+    </select>
+    <div class="icons">
+      <span class="material-icons" title="Notificaciones">notifications</span>
+      <span class="material-icons" title="Cuenta">account_circle</span>
+      <span class="material-icons" title="Soporte técnico">build</span>
+    </div>
+  </div>
+</div>

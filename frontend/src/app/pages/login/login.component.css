@@ -73,7 +73,7 @@
 .login-title {
     margin: 0 0 28px;
 
-    font-family: 'Roboto Black';
+    font-family: 'Roboto Light';
     font-size: clamp(26px, 5vw, 36px);
     font-weight: 800;
     line-height: 1.15;
