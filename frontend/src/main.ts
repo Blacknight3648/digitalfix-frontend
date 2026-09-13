@@ -1,6 +1,6 @@
 // src/main.ts
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideRouter, Routes } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import {
   HTTP_INTERCEPTORS,
   provideHttpClient,
@@ -16,7 +16,7 @@ import {
   MsalBroadcastService,
 } from '@azure/msal-angular';
 
-import { HomeComponent } from './app/pages/home/home.component';
+import { routes } from './app/app.routes';
 import {
   msalInstanceFactory,
   msalGuardConfigFactory,
@@ -25,18 +25,9 @@ import {
 import { App } from './app/app';
 
 /**
- * 1. LAS RUTAS DE LA APP
- * Aquí defines qué páginas existen. La ruta vacía ('') carga el HomeComponent
- * y el 'canActivate: [MsalGuard]' obliga a que el usuario esté logueado para entrar[cite: 4].
- */
-const routes: Routes = [
-  { path: '', component: HomeComponent, canActivate: [MsalGuard] },
-  { path: '**', redirectTo: '' },
-];
-
-/**
- * 2. EL ARRANQUE DE LA APLICACIÓN (Bootstrap)
- * Aquí es donde "enates" la app y registras los proveedores globales de MSAL[cite: 4].
+ * EL ARRANQUE DE LA APLICACIÓN (Bootstrap)
+ * Las rutas viven en app.routes.ts (única fuente de verdad); aquí solo se
+ * registran los proveedores globales de MSAL para el navegador.
  */
 bootstrapApplication(App, {
   providers: [
