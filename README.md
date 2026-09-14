@@ -42,18 +42,25 @@ Los parámetros de autenticación se definen en [`frontend/src/app/environment/e
 export const environment = {
   production: false,
   azure: {
-    clientId: '<AZURE_CLIENT_ID>',
+    clientId: '<AZURE_CLIENT_ID_FRONTEND>',
     tenantId: '<AZURE_TENANT_ID>',
     authority: 'https://login.microsoftonline.com/<AZURE_TENANT_ID>',
     redirectUri: 'http://localhost:4200',
     postLogoutRedirectUri: 'http://localhost:4200',
-    protectedResourceScopes: ['api://digitalfix-api/Access.All'],
+    // Scope de la API que valida digitalfix-ms-login (ver su propio README,
+    // sección Seguridad). El nombre del scope y el client ID de la API deben
+    // coincidir exactamente con lo configurado en Azure AD.
+    protectedResourceScopes: ['api://<AZURE_CLIENT_ID_API>/<NOMBRE_DEL_SCOPE>'],
   },
+  // digitalfix-ms-login (autenticación/auditoría)
   apiBaseUrl: 'http://localhost:8080',
+  // digitalfix-ms-workorders (CRUD de órdenes de trabajo). Este servicio no
+  // valida JWT todavía, así que no requiere protectedResourceScopes.
+  workOrdersApiUrl: 'http://localhost:8081',
 };
 ```
 
-Ajusta estos valores según el App Registration de Azure AD y la URL del backend (API Gateway / BFF).
+Ajusta estos valores según el App Registration de Azure AD y la URL de cada backend. **Importante**: el App Registration del frontend y el de la API deben vivir en el **mismo tenant** de Azure AD — si quedan en tenants distintos, el login falla con `AADSTS500011` (resource principal not found in tenant).
 
 ### Build de producción
 
