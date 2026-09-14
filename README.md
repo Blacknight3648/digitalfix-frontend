@@ -1,304 +1,152 @@
 # DigitalFix - Frontend
 
-Frontend application for **DigitalFix**, an on-demand IT services marketplace built with Node.js, Express, MongoDB, and React.
+Frontend del sistema **DigitalFix**, una plataforma de órdenes de trabajo de mantención eléctrica. Construido con **Angular 19** (SSR + Express) e integrado con **Azure AD** mediante **MSAL** para autenticación corporativa y autorización por rol.
+
+El código de la aplicación vive en [`frontend/`](frontend/).
 
 ---
 
-## Quick Start
+## Stack tecnológico
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) (v14 or higher)
-- [npm](https://www.npmjs.com/)
+- **Framework**: Angular 19 (standalone components + SSR)
+- **Autenticación**: Azure AD / Microsoft Entra ID vía `@azure/msal-angular` y `@azure/msal-browser`
+- **Servidor SSR**: Express (`@angular/ssr`)
+- **Lenguaje**: TypeScript
+- **Estilos**: SCSS
 
-### Installation
+---
 
-1. Clone the repository:
+## Requisitos
+
+- [Node.js](https://nodejs.org/) 20 o superior
+- npm
+- [Docker](https://www.docker.com/) (opcional, para ejecutar en contenedor)
+
+---
+
+## Quick start (desarrollo local)
+
 ```bash
-git clone <repository-url>
-cd digitalfix-frontend
-```
-
-2. Install dependencies:
-```bash
+cd frontend
 npm install
+npm start
 ```
 
-3. Environment configuration:
-Create a `.env` file in the root directory:
-```env
-# API base URL
-# For production (with API gateway)
-VITE_API_BASE_URL=https://api.digitalfix.io/api/v1
+La aplicación queda disponible en `http://localhost:4200/` con recarga en caliente.
 
-# For development (direct access)
-VITE_API_BASE_URL=http://localhost:5000/api/v1
+### Configuración de Azure AD (MSAL)
 
-# Optional: Firebase configuration (if needed)
-VITE_FIREBASE_API_KEY=
-VITE_FIREBASE_AUTH_DOMAIN=
-VITE_FIREBASE_PROJECT_ID=
-VITE_FIREBASE_STORAGE_BUCKET=
-VITE_FIREBASE_MESSAGING_SENDER_ID=
-VITE_FIREBASE_APP_ID=
+Los parámetros de autenticación se definen en [`frontend/src/app/environment/environment.ts`](frontend/src/app/environment/environment.ts):
+
+```ts
+export const environment = {
+  production: false,
+  azure: {
+    clientId: '<AZURE_CLIENT_ID>',
+    tenantId: '<AZURE_TENANT_ID>',
+    authority: 'https://login.microsoftonline.com/<AZURE_TENANT_ID>',
+    redirectUri: 'http://localhost:4200',
+    postLogoutRedirectUri: 'http://localhost:4200',
+    protectedResourceScopes: ['api://digitalfix-api/Access.All'],
+  },
+  apiBaseUrl: 'http://localhost:8080',
+};
 ```
 
-4. Run the application:
+Ajusta estos valores según el App Registration de Azure AD y la URL del backend (API Gateway / BFF).
+
+### Build de producción
+
 ```bash
-# Development mode (hot reload at http://localhost:5173)
-npm run dev
-
-# Build for production
+cd frontend
 npm run build
-
-# Start production build
-npm run start
 ```
+
+El resultado queda en `frontend/dist/digital-fix/`, con dos carpetas: `browser/` (bundle estático) y `server/` (servidor SSR de Express, `server.mjs`).
 
 ---
 
-## Architecture
+## Dockerización
 
-### Frontend Components
+El frontend incluye un `Dockerfile` multi-stage (build con Angular CLI + runtime con Node/Express para SSR) y un `docker-compose.yml` en [`frontend/`](frontend/).
 
-**Users (Customers)**:
-- Homepage
-- User authentication (login, register, reset password)
-- Service marketplace
-- Booking and scheduling
-- Payment integration (Stripe)
-- Dashboard and order tracking
+### Build y ejecución con Docker
 
-**Technicians (Experts)**:
-- Technician registration and profile management
-- Job discovery and acceptance
-- Service time tracking
-- Payment tracking
-- Notifications
-
-**Admin Panel**:
-- User management
-- Technician verification
-- Service category management
-- Review moderation
-- System analytics
-
-### API Integration
-
-The frontend communicates with the backend via the **DigitalFix API Gateway**:
-```
-VITE_API_BASE_URL → https://api.digitalfix.io/api/v1
+```bash
+cd frontend
+docker build -t digitalfix-frontend .
+docker run --rm -p 4200:4000 --name digitalfix-frontend digitalfix-frontend
 ```
 
-**Key API Endpoints**:
-- Authentication: `/auth/*`
-- Users: `/users/*`
-- Technicians: `/technicians/*`
-- Services: `/services/*`
-- Bookings: `/bookings/*`
-- Payments: `/payments/*`
-- Admin: `/admin/*`
+La aplicación queda disponible en `http://localhost:4200/`. El contenedor escucha internamente en el puerto `4000`, pero se mapea al `4200` del host porque ese es el Redirect URI que hoy está registrado en el App Registration de Azure AD (ver nota de MSAL más abajo).
+
+### Con Docker Compose
+
+```bash
+cd frontend
+docker compose up --build
+```
+
+Para detenerlo:
+
+```bash
+docker compose down
+```
+
+### Variables de entorno del contenedor
+
+| Variable   | Descripción                              | Valor por defecto |
+|------------|-------------------------------------------|--------------------|
+| `PORT`     | Puerto donde escucha el servidor Express  | `4000`             |
+| `NODE_ENV` | Entorno de ejecución de Node              | `production`       |
+
+> Nota: los valores de Azure AD (`clientId`, `tenantId`, `apiBaseUrl`, etc.) se compilan dentro del bundle en build time desde `environment.ts`, por lo que deben quedar correctos **antes** de construir la imagen.
+
+### ⚠️ MSAL y el Redirect URI (importante)
+
+El `redirectUri` de MSAL se calcula dinámicamente a partir de `window.location.origin` (ver [`environment.ts`](frontend/src/app/environment/environment.ts)), así que la app siempre le pide a Azure AD que la devuelva al mismo origen desde el que se inició el login. Pero **Azure AD solo acepta orígenes que estén dados de alta como Redirect URI en el App Registration** ("DigitalFix" en Microsoft Entra ID → Authentication → Redirect URIs).
+
+- Si vas a exponer la app en un puerto/host distinto a los ya registrados (por ejemplo, corriendo el contenedor directo en `4000` en vez de `4200`, o en un dominio de producción), primero agrega esa URL exacta en el App Registration, o el login de Microsoft terminará con `AADSTS50011` (redirect URI mismatch) o, si el navegador sí vuelve a un puerto sin nada escuchando, con `ERR_CONNECTION_REFUSED`.
+- Por eso el `docker-compose.yml` y el ejemplo de `docker run` mapean el contenedor al puerto `4200`: es el que ya está registrado, así no hace falta tocar Azure para probar la imagen localmente.
+
+### Detalle del Dockerfile
+
+- **Etapa `build`**: imagen `node:20-alpine`, instala dependencias con `npm ci` y ejecuta `ng build --configuration production`, generando el bundle SSR (`browser/` + `server/`).
+- **Etapa `runtime`**: imagen `node:20-alpine` liviana, instala solo dependencias de producción (`npm ci --omit=dev`) y copia el resultado del build. Se ejecuta con `node dist/digital-fix/server/server.mjs`, sirviendo tanto los assets estáticos como el renderizado en servidor.
 
 ---
 
-## Technology Stack
+## Estructura del proyecto
 
-### Frontend
-- **Framework**: React 18
-- **Language**: JavaScript (ES6+)
-- **Styling**: Tailwind CSS
-- **State Management**: React Context API
-- **Routing**: React Router DOM
-- **HTTP Client**: Axios
-
-### Optional Integrations
-- **Firebase**: Push notifications
-- **Stripe**: Payment processing
-- **Google Maps**: Location-based services
-
----
-
-## Project Structure
-
-```
+```text
 digitalfix-frontend/
-├── src/
-│   ├── components/        # Reusable UI components
-│   │   ├── layout/        # Layout components (header, footer)
-│   │   ├── ui/          # UI primitives (buttons, inputs)
-│   │   ├── auth/        # Authentication components
-│   │   ├── user/        # User-specific components
-│   │   ├── technician/  # Technician components
-│   │   ├── admin/       # Admin components
-│   │   └── common/      # Shared components
-│   ├── pages/           # Page components
-│   │   ├── auth/        # Authentication pages
-│   │   ├── user/        # User pages
-│   │   ├── technician/  # Technician pages
-│   │   ├── admin/       # Admin pages
-│   │   └── landing/     # Marketing pages
-│   ├── services/        # API service modules
-│   ├── contexts/        # React Context providers
-│   ├── hooks/           # Custom React hooks
-│   ├── utils/           # Utility functions
-│   ├── assets/          # Static assets
-│   └── App.jsx          # Main application component
-├── public/              # Publicly accessible files
-├── .env                 # Environment variables
-├── vite.config.js       # Vite configuration
-├── tailwind.config.js   # Tailwind CSS configuration
-├── postcss.config.js    # PostCSS configuration
-└── README.md            # Project documentation
+├── README.md
+└── frontend/
+    ├── Dockerfile
+    ├── docker-compose.yml
+    ├── .dockerignore
+    ├── angular.json
+    ├── package.json
+    └── src/
+        ├── app/
+        │   ├── config/         # Configuración de MSAL (Azure AD)
+        │   ├── environment/    # Variables de entorno (Azure, API base URL)
+        │   ├── guards/         # Guards de ruta (autenticación / roles)
+        │   ├── layout/         # Layout principal, sidebar, topbar
+        │   ├── model/          # Modelos de dominio (usuario, orden de trabajo)
+        │   ├── pages/          # Páginas (login, home, coming-soon)
+        │   └── services/       # Servicios (auth, HTTP)
+        ├── main.ts             # Bootstrap del cliente (browser)
+        ├── main.server.ts      # Bootstrap del servidor (SSR)
+        └── server.ts           # Servidor Express para SSR
 ```
 
 ---
 
-## Roles & Permissions
-
-### User (Customer)
-- Browse and search services
-- Book and schedule services
-- Make payments
-- Manage profile and bookings
-
-### Technician (Expert)
-- Register and get verified
-- Accept and manage jobs
-- Track time and earnings
-- Update profile and availability
-
-### Admin
-- Manage all users and technicians
-- Moderate content and reviews
-- Track system analytics
-- Configure system settings
-
----
-
-## Security
-
-- JWT-based authentication
-- Role-based access control
-- HTTPS for secure communication
-- API gateway for security and rate limiting
-- Input validation and sanitization
-- Environment variable management
-
----
-
-## Development
-
-### Development Commands
+## Scripts disponibles (`frontend/`)
 
 ```bash
-# Start development server (hot reload)
-npm run dev
-
-# Run lint checks
-npm run lint
-
-# Run tests
-npm run test
+npm start     # ng serve - servidor de desarrollo
+npm run build # ng build - build de producción (browser + SSR)
+npm run watch # build en modo watch (desarrollo)
 ```
-
-### Adding a New Service
-
-1. Add service to `src/services/api.js`
-2. Create new page in `src/pages/`
-3. Add navigation in `src/components/layout/Header.jsx`
-4. Update routes in `App.jsx`
-
-### Adding a New Page
-
-```bash
-# Create new page component
-src/pages/my-new-page.jsx
-
-# Add to router in App.jsx
-<Route path="/my-new-page" element={<MyNewPage />} />
-
-# Import and use in navigation
-import MyNewPage from '@/pages/my-new-page'
-
-# In header component
-<Link to="/my-new-page">My New Page</Link>
-```
-
----
-
-## 🧪 Testing
-
-The project uses Jest for unit testing and React Testing Library for component testing.
-
-```bash
-# Run all tests
-npm run test
-
-# Run tests with watch mode
-npm run test:watch
-```
-
----
-
-## Production Build
-
-```bash
-# Build for production
-npm run build
-
-# Serve production build locally
-npm run preview
-
-# Start production server (using serve package)
-npm run start
-```
-
-The build process creates an optimized production bundle in the `dist/` directory.
-
----
-
-## API Integration
-
-The frontend uses Axios to communicate with the backend API:
-
-```javascript
-import axios from '@/services/api'
-
-// Get all services
-export const getServices = async () => {
-  const response = await axios.get('/services')
-  return response.data
-}
-
-// Create booking
-export const createBooking = async (bookingData) => {
-  const response = await axios.post('/bookings', bookingData)
-  return response.data
-}
-```
-
----
-
-## Documentation
-
-- [API Documentation](https://digitalfix.io/api-docs) (Backend)
-- [Architecture Overview](https://digitalfix.io/docs/architecture)
-- [Deployment Guide](https://digitalfix.io/docs/deployment)
-- [Contribution Guidelines](https://digitalfix.io/docs/contributing)
-
----
-
-## Contributing
-
-1. Create a feature branch
-2. Make your changes
-3. Test thoroughly
-4. Submit a pull request
-5. Ensure code follows project style guidelines
-
----
-
-## Support
-
-For issues or questions, please:
-1. Check the [FAQ](https://digitalfix.io/faq)
-2. Search [GitHub Issues](https://
