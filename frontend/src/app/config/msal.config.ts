@@ -52,7 +52,11 @@ export function msalGuardConfigFactory(): MsalGuardConfiguration {
   return {
     interactionType: InteractionType.Redirect,
     authRequest: {
-      scopes: ['user.read'],
+      // Incluye el scope del backend para que, si el guard dispara un login
+      // interactivo (ej. entrar directo a /home sin sesión), el consentimiento
+      // quede dado también para digitalfix-api y no falle luego al pedir el
+      // token para el MsalInterceptor.
+      scopes: ['user.read', ...environment.azure.protectedResourceScopes],
     },
     loginFailedRoute: '/login-failed',
   };
