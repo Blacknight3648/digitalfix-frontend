@@ -4,13 +4,18 @@ const currentOrigin =
 export const environment = {
   production: false,
   azure: {
-    clientId: '1a248ad8-d43b-42af-87f2-b177b352e235', // ID del Frontend
-    tenantId: '2845a269-a60f-4fdf-969c-2811937a2e85',
-    authority: 'https://login.microsoftonline.com/2845a269-a60f-4fdf-969c-2811937a2e85',
+    // Nuevo App Registration del frontend, creado en el MISMO tenant que la
+    // API del backend (antes estaban en tenants distintos y por eso fallaba
+    // con AADSTS500011: MSAL no puede pedir un token para un recurso que
+    // vive en otro tenant).
+    clientId: '68388825-e16a-4a0b-9b8c-d70fc9cbcc3c', // ID del Frontend (tenant compartido)
+    tenantId: '3fb8463e-0e33-4b7d-adc1-2a47c707831e',
+    authority: 'https://login.microsoftonline.com/3fb8463e-0e33-4b7d-adc1-2a47c707831e',
     redirectUri: currentOrigin,
     postLogoutRedirectUri: currentOrigin,
-    // CAMBIO AQUÍ: Usar el App ID URI del Backend
-    protectedResourceScopes: ['api://3ff96d3a-fa6c-4349-ad81-4e9536b4148a/access_as_user'],
+    // App ID URI de la API del backend (client 9494b59c..., mismo tenant) +
+    // el scope que exige LoginController: hasAuthority('SCP_access_as_user').
+    protectedResourceScopes: ['api://9494b59c-9c6e-4a0f-91ae-ae90212882e7/access_as_user'],
   },
   apiBaseUrl: 'http://localhost:8080',
 };

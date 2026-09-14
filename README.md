@@ -102,7 +102,7 @@ docker compose down
 
 > Nota: los valores de Azure AD (`clientId`, `tenantId`, `apiBaseUrl`, etc.) se compilan dentro del bundle en build time desde `environment.ts`, por lo que deben quedar correctos **antes** de construir la imagen.
 
-### ⚠️ MSAL y el Redirect URI (importante)
+### MSAL y el Redirect URI (importante)
 
 El `redirectUri` de MSAL se calcula dinámicamente a partir de `window.location.origin` (ver [`environment.ts`](frontend/src/app/environment/environment.ts)), así que la app siempre le pide a Azure AD que la devuelva al mismo origen desde el que se inició el login. Pero **Azure AD solo acepta orígenes que estén dados de alta como Redirect URI en el App Registration** ("DigitalFix" en Microsoft Entra ID → Authentication → Redirect URIs).
 
