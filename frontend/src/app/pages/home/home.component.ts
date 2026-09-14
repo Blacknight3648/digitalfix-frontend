@@ -1,7 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
+import { WorkOrderService } from '../../services/work-order.service';
 import { AppRole, APP_ROLE_LABEL } from '../../model/user.model';
 import {
     WorkOrder,
@@ -12,62 +13,6 @@ import {
     WORK_ORDER_NEXT_ACTION_LABEL,
 } from '../../model/work-order.model';
 
-// Datos de ejemplo mientras ms-digitalfix-workorders no está disponible.
-// Reemplazar por un WorkOrderService que consuma GET /api/workorders.
-const MOCK_WORK_ORDERS: WorkOrder[] = [
-    {
-        id: '1042', cliente: 'Comercial Rojas Ltda.', servicio: 'Revisión tablero eléctrico',
-        tecnico: null, estado: 'CREADA', fechaCreacion: '2026-09-12T09:10:00',
-        timeline: [{ descripcion: 'Orden creada', actor: 'Cliente · Comercial Rojas', fecha: '2026-09-12T09:10:00' }],
-    },
-    {
-        id: '1041', cliente: 'Ferretería Lo Prado', servicio: 'Cambio de breaker trifásico',
-        tecnico: 'P. Muñoz', estado: 'ASIGNADA', fechaCreacion: '2026-09-12T06:05:00',
-        timeline: [
-            { descripcion: 'Orden creada', actor: 'Cliente · Ferretería Lo Prado', fecha: '2026-09-12T06:05:00' },
-            { descripcion: 'Técnico asignado: P. Muñoz', actor: 'Supervisor · A. Vidal', fecha: '2026-09-12T07:00:00' },
-        ],
-    },
-    {
-        id: '1039', cliente: 'Edificio Las Torres', servicio: 'Mantención generador',
-        tecnico: 'R. Soto', estado: 'EN_DESPLAZAMIENTO', fechaCreacion: '2026-09-11T10:00:00',
-        timeline: [
-            { descripcion: 'Orden creada', actor: 'Cliente · Las Torres', fecha: '2026-09-11T10:00:00' },
-            { descripcion: 'Técnico asignado: R. Soto', actor: 'Supervisor · A. Vidal', fecha: '2026-09-11T11:30:00' },
-            { descripcion: 'Técnico en camino', actor: 'Sistema', fecha: '2026-09-12T10:40:00' },
-        ],
-    },
-    {
-        id: '1035', cliente: 'Panadería El Trigal', servicio: 'Instalación de enchufes',
-        tecnico: 'C. Fuentes', estado: 'EN_EJECUCION', fechaCreacion: '2026-09-10T09:00:00',
-        timeline: [
-            { descripcion: 'Orden creada', actor: 'Cliente · El Trigal', fecha: '2026-09-10T09:00:00' },
-            { descripcion: 'Técnico asignado: C. Fuentes', actor: 'Supervisor · M. Rojas', fecha: '2026-09-10T09:40:00' },
-            { descripcion: 'Técnico en camino', actor: 'Sistema', fecha: '2026-09-12T08:00:00' },
-            { descripcion: 'Trabajo iniciado en terreno', actor: 'Técnico · C. Fuentes', fecha: '2026-09-12T10:10:00' },
-        ],
-    },
-    {
-        id: '1020', cliente: 'Condominio Los Aromos', servicio: 'Revisión de subestación',
-        tecnico: 'P. Muñoz', estado: 'CERRADA', fechaCreacion: '2026-09-07T09:00:00',
-        timeline: [
-            { descripcion: 'Orden creada', actor: 'Cliente · Los Aromos', fecha: '2026-09-07T09:00:00' },
-            { descripcion: 'Técnico asignado: P. Muñoz', actor: 'Supervisor · A. Vidal', fecha: '2026-09-07T09:30:00' },
-            { descripcion: 'Técnico en camino', actor: 'Sistema', fecha: '2026-09-08T09:00:00' },
-            { descripcion: 'Trabajo iniciado', actor: 'Técnico · P. Muñoz', fecha: '2026-09-08T09:30:00' },
-            { descripcion: 'Orden cerrada', actor: 'Supervisor · A. Vidal', fecha: '2026-09-08T12:00:00' },
-        ],
-    },
-    {
-        id: '1018', cliente: 'Café Bellavista', servicio: 'Cambio de luminarias LED',
-        tecnico: null, estado: 'CANCELADA', fechaCreacion: '2026-09-06T09:00:00',
-        timeline: [
-            { descripcion: 'Orden creada', actor: 'Cliente · Café Bellavista', fecha: '2026-09-06T09:00:00' },
-            { descripcion: 'Orden cancelada por el cliente', actor: 'Cliente', fecha: '2026-09-06T09:20:00' },
-        ],
-    },
-];
-
 @Component({
     standalone: true,
     selector: 'app-home',
@@ -75,15 +20,18 @@ const MOCK_WORK_ORDERS: WorkOrder[] = [
     templateUrl: './home.component.html',
     styleUrl: './home.component.css',
 })
-export class HomeComponent {
+export class HomeComponent implements OnInit {
     private readonly authService = inject(AuthService);
+    private readonly workOrderService = inject(WorkOrderService);
 
     readonly statuses: WorkOrderStatus[] = ['CREADA', 'ASIGNADA', 'EN_DESPLAZAMIENTO', 'EN_EJECUCION', 'CERRADA', 'CANCELADA'];
     readonly roleLabel = APP_ROLE_LABEL;
     readonly statusLabel = WORK_ORDER_STATUS_LABEL;
     readonly statusCssClass = WORK_ORDER_STATUS_CSS_CLASS;
 
-    orders: WorkOrder[] = MOCK_WORK_ORDERS;
+    orders: WorkOrder[] = [];
+    loading = false;
+    errorMessage = '';
 
     searchTerm = '';
     statusFilter: WorkOrderStatus | '' = '';
@@ -91,10 +39,34 @@ export class HomeComponent {
     dateTo = '';
     selectedOrder: WorkOrder | null = null;
 
-    constructor() {
-        // Por si se entra directo a /home con una sesión de MSAL ya activa en cache
-        // (por ejemplo al recargar la página), sin pasar de nuevo por el login.
-        this.authService.syncFromActiveAccount();
+    // Estado del modal "Nueva orden" (digitalfix-ms-workorders solo pide
+    // cliente/servicio/tecnico; el estado inicial CREADA lo pone el backend).
+    showCreateModal = false;
+    creating = false;
+    createError = '';
+    newCliente = '';
+    newServicio = '';
+    newTecnico = '';
+
+    ngOnInit(): void {
+        this.loadOrders();
+    }
+
+    loadOrders(): void {
+        this.loading = true;
+        this.errorMessage = '';
+        this.workOrderService.getAll().subscribe({
+            next: (orders) => {
+                this.orders = orders;
+                this.loading = false;
+            },
+            error: (err) => {
+                console.error('[digitalfix-ms-workorders] Error al cargar órdenes:', err);
+                this.loading = false;
+                this.errorMessage =
+                    'No se pudo cargar la lista de órdenes. Verifica que digitalfix-ms-workorders esté corriendo.';
+            },
+        });
     }
 
     get currentUser() {
@@ -138,6 +110,8 @@ export class HomeComponent {
 
     // Regla del caso: no se puede pasar a EN_EJECUCION sin ASIGNAR antes;
     // por eso el avance siempre es al siguiente estado del flujo, nunca salta uno.
+    // (digitalfix-ms-workorders todavía no valida esta regla en el servidor;
+    // ver la nota en WorkOrderService.updateStatus del backend.)
     advanceStatus(order: WorkOrder): void {
         const idx = WORK_ORDER_STATUS_FLOW.indexOf(order.estado);
         if (idx < 0 || idx >= WORK_ORDER_STATUS_FLOW.length - 1) {
@@ -145,23 +119,22 @@ export class HomeComponent {
         }
 
         const nuevo = WORK_ORDER_STATUS_FLOW[idx + 1];
-        order.estado = nuevo;
-        if (nuevo === 'ASIGNADA' && !order.tecnico) {
-            order.tecnico = 'Por confirmar';
-        }
-        order.timeline.push({
-            descripcion: `Estado actualizado a "${WORK_ORDER_STATUS_LABEL[nuevo]}"`,
-            actor: `${this.roleLabel[this.currentRole]} · ${this.currentUser?.name ?? 'tú'}`,
-            fecha: new Date().toISOString(),
+        this.workOrderService.updateStatus(order.id, nuevo).subscribe({
+            next: (actualizada) => this.replaceOrder(order, actualizada, nuevo),
+            error: (err) => {
+                console.error('[digitalfix-ms-workorders] Error al actualizar estado:', err);
+                this.errorMessage = 'No se pudo actualizar el estado de la orden.';
+            },
         });
     }
 
     cancelOrder(order: WorkOrder): void {
-        order.estado = 'CANCELADA';
-        order.timeline.push({
-            descripcion: 'Orden cancelada por el cliente',
-            actor: `Cliente · ${this.currentUser?.name ?? 'tú'}`,
-            fecha: new Date().toISOString(),
+        this.workOrderService.cancel(order.id).subscribe({
+            next: (actualizada) => this.replaceOrder(order, actualizada, 'CANCELADA'),
+            error: (err) => {
+                console.error('[digitalfix-ms-workorders] Error al cancelar la orden:', err);
+                this.errorMessage = 'No se pudo cancelar la orden.';
+            },
         });
     }
 
@@ -174,9 +147,63 @@ export class HomeComponent {
     }
 
     onNuevaOrden(): void {
-        // Placeholder hasta que exista el formulario real de creación de orden.
-        if (typeof window !== 'undefined') {
-            window.alert('Abriría el formulario de nueva orden');
+        this.createError = '';
+        this.newCliente = '';
+        this.newServicio = '';
+        this.newTecnico = '';
+        this.showCreateModal = true;
+    }
+
+    closeCreateModal(): void {
+        this.showCreateModal = false;
+    }
+
+    submitCreateOrder(): void {
+        if (!this.newCliente.trim() || !this.newServicio.trim()) {
+            this.createError = 'Cliente y servicio son obligatorios.';
+            return;
+        }
+
+        this.creating = true;
+        this.createError = '';
+        this.workOrderService
+            .create({
+                cliente: this.newCliente.trim(),
+                servicio: this.newServicio.trim(),
+                tecnico: this.newTecnico.trim() || undefined,
+            })
+            .subscribe({
+                next: (creada) => {
+                    this.orders = [creada, ...this.orders];
+                    this.creating = false;
+                    this.showCreateModal = false;
+                },
+                error: (err) => {
+                    console.error('[digitalfix-ms-workorders] Error al crear la orden:', err);
+                    this.creating = false;
+                    this.createError = 'No se pudo crear la orden. Intenta de nuevo.';
+                },
+            });
+    }
+
+    // Reemplaza la orden en la lista local con la version que devolvio el
+    // backend, y agrega una linea al timeline SOLO para esta sesion (no se
+    // persiste: el historial real lo va a servir ms-digitalfix-audit).
+    private replaceOrder(anterior: WorkOrder, actualizada: WorkOrder, nuevoEstado: WorkOrderStatus): void {
+        const conTimeline: WorkOrder = {
+            ...actualizada,
+            timeline: [
+                ...anterior.timeline,
+                {
+                    descripcion: `Estado actualizado a "${WORK_ORDER_STATUS_LABEL[nuevoEstado]}"`,
+                    actor: `${this.roleLabel[this.currentRole]} · ${this.currentUser?.name ?? 'tú'}`,
+                    fecha: new Date().toISOString(),
+                },
+            ],
+        };
+        this.orders = this.orders.map((o) => (o.id === anterior.id ? conTimeline : o));
+        if (this.selectedOrder?.id === anterior.id) {
+            this.selectedOrder = conTimeline;
         }
     }
 }

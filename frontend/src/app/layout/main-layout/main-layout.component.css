@@ -1,6 +1,6 @@
 .app-shell {
   display: grid;
-  grid-template-columns: 226px 1fr;
+  grid-template-columns: 250px 1fr;
   min-height: 100vh;
 }
 
@@ -21,7 +21,7 @@ app-sidebar {
 
 .content-body {
   flex: 1;
-  padding: 32px;
+  padding: 36px;
   min-width: 0;
 }
 

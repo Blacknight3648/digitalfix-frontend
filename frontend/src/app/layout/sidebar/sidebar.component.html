@@ -1,16 +1,26 @@
 <aside class="sidebar">
   <div class="sidebar-top">
     <div class="user-info">
-      <span class="brand" [title]="currentUser?.name ?? 'Usuario'">{{ currentUser?.name ?? 'Usuario' }}</span>
+      <span class="brand">
+        {{ currentUser?.name ?? 'Usuario' }}
+      </span>
+
       @if (currentUser) {
-        <span class="user-role">{{ roleLabel[currentUser.role] }}</span>
+        <span class="user-role">
+          {{ roleLabel[currentUser.role] }}
+        </span>
       }
     </div>
   </div>
 
   <nav class="nav-list">
     @for (item of navItems; track item.path) {
-      <a class="nav-link" [routerLink]="['/', item.path]" routerLinkActive="selected" [title]="item.label">
+      <a
+        class="nav-link"
+        [routerLink]="['/', item.path]"
+        routerLinkActive="selected"
+        [title]="item.label"
+      >
         <span class="material-icons">{{ item.icon }}</span>
         <span>{{ item.label }}</span>
       </a>
@@ -19,10 +29,18 @@
 
   <div class="sidebar-spacer"></div>
 
-  <button class="btn-logout" type="button" title="Cerrar sesión" (click)="onLogout()">
+  <button
+    class="btn-logout"
+    type="button"
+    title="Cerrar sesión"
+    (click)="onLogout()"
+  >
     <span class="material-icons">logout</span>
     <span>Cerrar sesión</span>
   </button>
 
-  <div class="sidebar-footer">Versión del sistema<br>0.1.1</div>
+  <div class="sidebar-footer">
+    Versión del sistema<br>
+    0.1.1
+  </div>
 </aside>

@@ -12,6 +12,10 @@
     </div>
   </div>
 
+  @if (errorMessage) {
+    <p class="error-banner">{{ errorMessage }}</p>
+  }
+
   <div class="filters">
     <input type="search" placeholder="Buscar por cliente o N° de orden" [(ngModel)]="searchTerm">
     <select [(ngModel)]="statusFilter">
@@ -60,7 +64,9 @@
         </tr>
       } @empty {
         <tr>
-          <td colspan="7" class="empty-hint">No hay órdenes que coincidan con los filtros.</td>
+          <td colspan="7" class="empty-hint">
+            {{ loading ? 'Cargando órdenes…' : 'No hay órdenes que coincidan con los filtros.' }}
+          </td>
         </tr>
       }
     </tbody>
@@ -86,6 +92,47 @@
           </li>
         }
       </ul>
+    </div>
+  </div>
+}
+
+<!-- Modal nueva orden -->
+@if (showCreateModal) {
+  <div class="overlay open" (click)="closeCreateModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Nueva orden de trabajo</h3>
+        <span class="material-icons" (click)="closeCreateModal()">close</span>
+      </div>
+
+      <form (ngSubmit)="submitCreateOrder()" novalidate>
+        <div class="form-field">
+          <label for="nueva-cliente">Cliente</label>
+          <input id="nueva-cliente" name="cliente" type="text" [(ngModel)]="newCliente"
+                 placeholder="Ej. Comercial Rojas Ltda." autocomplete="off">
+        </div>
+        <div class="form-field">
+          <label for="nueva-servicio">Servicio</label>
+          <input id="nueva-servicio" name="servicio" type="text" [(ngModel)]="newServicio"
+                 placeholder="Ej. Revisión tablero eléctrico" autocomplete="off">
+        </div>
+        <div class="form-field">
+          <label for="nueva-tecnico">Técnico (opcional)</label>
+          <input id="nueva-tecnico" name="tecnico" type="text" [(ngModel)]="newTecnico"
+                 placeholder="Se asigna después si se deja vacío" autocomplete="off">
+        </div>
+
+        @if (createError) {
+          <p class="error-banner">{{ createError }}</p>
+        }
+
+        <div class="modal-actions">
+          <button class="btn-secondary" type="button" (click)="closeCreateModal()">Cancelar</button>
+          <button class="btn-primary" type="submit" [disabled]="creating">
+            {{ creating ? 'Creando…' : 'Crear orden' }}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 }

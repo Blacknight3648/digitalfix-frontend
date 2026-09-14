@@ -18,4 +18,8 @@ export const environment = {
     protectedResourceScopes: ['api://9494b59c-9c6e-4a0f-91ae-ae90212882e7/access_as_user'],
   },
   apiBaseUrl: 'http://localhost:8080',
+  // digitalfix-ms-workorders (puerto 8081 en docker-compose, ver el repo de
+  // ese microservicio). Sin JWT por ahora: ese servicio todavia no valida
+  // Azure AD, asi que no hace falta agregarlo a protectedResourceMap.
+  workOrdersApiUrl: 'http://localhost:8081',
 };
