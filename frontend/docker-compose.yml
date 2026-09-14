@@ -1,0 +1,15 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: digitalfix-frontend:latest
+    container_name: digitalfix-frontend
+    ports:
+      # Host 4200 para coincidir con el Redirect URI registrado en Azure AD
+      # (http://localhost:4200). El contenedor sigue escuchando internamente en 4000.
+      - "4200:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+    restart: unless-stopped
