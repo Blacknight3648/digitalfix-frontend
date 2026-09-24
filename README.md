@@ -123,6 +123,37 @@ El `redirectUri` de MSAL se calcula dinámicamente a partir de `window.location.
 
 ---
 
+## Despliegue en AWS (GitHub Actions)
+
+El repo incluye [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml), que se dispara con cada push a la rama `deploy` (o manualmente desde la pestaña *Actions*) y hace lo siguiente:
+
+1. **Build & push**: construye la imagen Docker de `frontend/` y la sube a **Amazon ECR** (tags `latest` y el SHA del commit).
+2. **Deploy**: se conecta por SSH a la instancia **EC2** del frontend, hace `docker pull` de la imagen nueva, reemplaza el contenedor `digitalfix-frontend` y lo deja escuchando en el puerto `4200` (igual que en `docker-compose.yml`).
+
+### Requisitos previos en AWS
+
+- Un repositorio en **Amazon ECR** (ej. `digitalfix-frontend`).
+- Una instancia **EC2** con Docker instalado, con el puerto `4200` abierto en su Security Group y con AWS CLI configurado (o un rol IAM asociado) con permisos de `ecr:GetAuthorizationToken` / `ecr:BatchGetImage` para poder hacer `docker pull` desde ECR.
+- Un usuario **IAM** con permisos de push a ECR (`ecr:GetAuthorizationToken`, `ecr:BatchCheckLayerAvailability`, `ecr:PutImage`, `ecr:InitiateLayerUpload`, `ecr:UploadLayerPart`, `ecr:CompleteLayerUpload`) para usar desde GitHub Actions.
+
+### Configurar credenciales
+
+Los valores **no se commitean**: se copian del [`.env.example`](.env.example) y se cargan como *Secrets* del repositorio en GitHub (`Settings → Secrets and variables → Actions`):
+
+| Secret                  | Descripción                                              |
+|--------------------------|-----------------------------------------------------------|
+| `AWS_ACCESS_KEY_ID`      | Access key del usuario IAM usado por el workflow          |
+| `AWS_SECRET_ACCESS_KEY`  | Secret key del mismo usuario IAM                          |
+| `AWS_REGION`             | Región de AWS (ej. `us-east-1`)                            |
+| `ECR_REPOSITORY`         | Nombre del repositorio en ECR (ej. `digitalfix-frontend`) |
+| `EC2_HOST`               | IP pública o DNS de la EC2 del frontend                    |
+| `EC2_USERNAME`           | Usuario SSH de la EC2 (ej. `ec2-user`, `ubuntu`)          |
+| `EC2_SSH_PRIVATE_KEY`    | Contenido completo de la llave privada `.pem` para SSH    |
+
+> Recuerda además que `environment.prod.ts` (ver más arriba) se compila dentro del bundle en build time: una vez que la EC2 del frontend tenga IP/dominio definitivo y las de `digitalfix-ms-login` / `digitalfix-ms-workorders`, hay que actualizar ese archivo (y agregar el origen como Redirect URI en Azure AD) antes de volver a desplegar.
+
+---
+
 ## Estructura del proyecto
 
 ```text

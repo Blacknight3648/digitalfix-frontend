@@ -1,0 +1,3 @@
+# Credenciales locales (ver .env.example)
+.env
+.env.local
