@@ -1,47 +1,247 @@
 <div class="login-page">
-    <div class="login-bg" aria-hidden="true"></div>
-    <div class="login-overlay" aria-hidden="true"></div>
+    <!-- Tarjeta Principal Dividida -->
+    <main class="login-card-container">
+        <!-- LADO IZQUIERDO: ILUSTRACIÓN TECNOLÓGICA & SEGURIDAD -->
+        <section class="brand-illustration-side">
+            <!-- Cabecera de Marca -->
+            <header class="brand-header">
+                <div class="brand-identity">
+                    <img src="/digitalfix.svg" alt="DigitalFix Logo" class="brand-logo" onerror="this.style.display='none'" />
+                    <span class="brand-name">Digital<span class="brand-accent">Fix</span></span>
+                </div>
+            </header>
 
-    <div class="login-content">
-        <h1 class="login-title">Inicia sesión en tu cuenta</h1>
+            <!-- Ilustración Vectorial Editorial Tech (inspirada en la referencia) -->
+            <div class="illustration-wrapper" aria-hidden="true">
+                <svg class="tech-security-illustration" viewBox="0 0 520 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Engranaje de fondo izquierdo -->
+                    <g opacity="0.25" transform="translate(60, 40)">
+                        <path d="M80 30L87 42L101 43L104 57L117 63L115 77L125 87L118 100L124 113L113 124L114 138L100 145L96 158L82 161L74 173L60 171L50 181L37 175L24 182L15 172L2 173L-4 160L-17 156L-20 142L-32 133L-31 119L-40 108L-35 95L-41 81L-32 71L-33 57L-21 49L-18 36L-4 32L2 19L16 20L26 9L39 14L52 6L62 16L75 14L80 30Z" stroke="#0056fb" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="#e0edff" />
+                        <circle cx="42" cy="95" r="34" fill="#ffffff" stroke="#0056fb" stroke-width="3" />
+                    </g>
 
-        <div class="login-card">
-            <form (ngSubmit)="onSubmit()" novalidate>
-                <div class="form-field">
-                    <label for="email">Email</label>
-                    <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        [(ngModel)]="email"
-                        placeholder="usuario.ap@duocuc.cl"
-                        autocomplete="username"
-                    />
+                    <!-- Planta decorativa tech (lado izquierdo) -->
+                    <path d="M50 250Q65 190 95 180Q85 220 70 250Z" fill="#93c5fd" opacity="0.6"/>
+                    <path d="M55 250Q75 210 110 205Q95 235 75 250Z" fill="#60a5fa" opacity="0.5"/>
+                    <path d="M60 250Q50 160 85 130Q80 200 65 250Z" stroke="#0056fb" stroke-width="2.5" fill="none"/>
+                    
+                    <!-- Planta decorativa (lado derecho) -->
+                    <path d="M430 250Q415 190 385 180Q395 220 410 250Z" fill="#93c5fd" opacity="0.6"/>
+                    <path d="M425 250Q405 210 370 205Q385 235 405 250Z" fill="#60a5fa" opacity="0.5"/>
+
+                    <!-- Línea de suelo / base -->
+                    <path d="M50 250H460" stroke="#0056fb" stroke-width="3" stroke-linecap="round" />
+
+                    <!-- PERSONAJE IZQUIERDA (Técnico con polera azul) -->
+                    <g class="character-left">
+                        <!-- Cabello y Cabeza -->
+                        <path d="M190 145C190 134 199 125 210 125C221 125 228 134 228 145V152H190V145Z" fill="#0b1f33"/>
+                        <circle cx="209" cy="154" r="14" fill="#ffffff" stroke="#0056fb" stroke-width="3"/>
+                        <!-- Cuello -->
+                        <path d="M205 168H213V178H205V168Z" fill="#ffffff" stroke="#0056fb" stroke-width="2.5"/>
+                        <!-- Cuerpo / Polera Azul -->
+                        <path d="M175 182C188 176 230 176 242 182L255 235H162L175 182Z" fill="#0056fb"/>
+                        <!-- Brazo izquierdo extendido hacia el escudo -->
+                        <path d="M175 186L150 215L170 235L190 205" fill="#0056fb"/>
+                        <!-- Brazo derecho sosteniendo el escudo -->
+                        <path d="M235 186L265 212L250 225L228 202" stroke="#0056fb" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- Mano blanca sosteniendo el escudo -->
+                        <circle cx="264" cy="214" r="7" fill="#ffffff" stroke="#0056fb" stroke-width="2.5"/>
+                        <!-- Piernas sentadas / base -->
+                        <path d="M152 235C152 245 170 250 195 250H235V235H152Z" fill="#ffffff" stroke="#0056fb" stroke-width="3"/>
+                    </g>
+
+                    <!-- ESCUDO CENTRAL Y CANDADO DE SEGURIDAD -->
+                    <g class="central-shield" transform="translate(260, 215)">
+                        <!-- Aro exterior sombreado -->
+                        <circle cx="0" cy="0" r="62" fill="#ffffff" stroke="#0056fb" stroke-width="4.5" />
+                        <circle cx="0" cy="0" r="52" fill="#f0f6ff" stroke="#3b82f6" stroke-width="2.5" />
+                        <!-- Círculo interior azul vibrante -->
+                        <circle cx="0" cy="0" r="40" fill="#0056fb" />
+                        
+                        <!-- Arco superior del candado (blanco) -->
+                        <path d="M-13 -2V-15C-13 -22 -7 -28 0 -28C7 -28 13 -22 13 -15V-2" stroke="#ffffff" stroke-width="5" stroke-linecap="round" fill="none" />
+                        <!-- Cuerpo del candado -->
+                        <rect x="-16" y="-3" width="32" height="24" rx="6" fill="#ffffff" />
+                        <!-- Ojo de la cerradura -->
+                        <circle cx="0" cy="6" r="3.5" fill="#0056fb" />
+                        <path d="M-2.5 7L-3.5 14H3.5L2.5 7Z" fill="#0056fb" />
+                    </g>
+
+                    <!-- PERSONAJE DERECHA (Especialista en soporte) -->
+                    <g class="character-right">
+                        <!-- Cabello estilo Bob Azul/Oscuro -->
+                        <path d="M365 140C365 124 378 115 395 115C412 115 425 124 425 140V162C425 162 420 166 414 158V146H376V158C370 166 365 162 365 162V140Z" fill="#0056fb"/>
+                        <circle cx="395" cy="145" r="14" fill="#ffffff" stroke="#0056fb" stroke-width="3"/>
+                        <path d="M391 159H399V172H391V159Z" fill="#ffffff" stroke="#0056fb" stroke-width="2.5"/>
+                        <!-- Cuerpo / Polera Azul -->
+                        <path d="M360 174C374 168 418 168 432 174L445 235H346L360 174Z" fill="#0056fb"/>
+                        <!-- Brazo sosteniendo el escudo -->
+                        <path d="M366 182L320 208L330 220L375 198" stroke="#0056fb" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- Mano blanca -->
+                        <circle cx="318" cy="209" r="7" fill="#ffffff" stroke="#0056fb" stroke-width="2.5"/>
+                        <!-- Piernas / Base sentada -->
+                        <path d="M355 235V250H425C435 250 445 242 445 235H355Z" fill="#ffffff" stroke="#0056fb" stroke-width="3"/>
+                    </g>
+
+                    <!-- BURBUJA FLOTANTE CON LLAVE (Seguridad) -->
+                    <g class="floating-key" transform="translate(435, 120)">
+                        <circle cx="0" cy="0" r="22" fill="#ffffff" stroke="#0056fb" stroke-width="2.5" />
+                        <!-- Línea conectora discontinua -->
+                        <path d="M-18 18C-28 28 -34 45 -34 60" stroke="#0056fb" stroke-width="2" stroke-dasharray="3 4" fill="none" />
+                        <!-- Llave dorada/azul -->
+                        <circle cx="-5" cy="-5" r="6" stroke="#0056fb" stroke-width="2.5" fill="none" />
+                        <path d="M-1 -1L9 9M5 5L8 2M8 8L11 5" stroke="#0056fb" stroke-width="2.5" stroke-linecap="round" />
+                    </g>
+
+                    <!-- Puntos y destellos de seguridad -->
+                    <circle cx="130" cy="90" r="3" fill="#3b82f6" />
+                    <circle cx="150" cy="120" r="2" fill="#60a5fa" />
+                    <circle cx="370" cy="75" r="4" fill="#93c5fd" />
+                    <circle cx="470" cy="180" r="3" fill="#3b82f6" />
+                </svg>
+            </div>
+
+            <!-- Resumen y confianza -->
+            <footer class="brand-footer">
+                <p class="brand-tagline">
+                    Gestión integral de soporte técnico, hardware y servicios digitales con la máxima protección.
+                </p>
+            </footer>
+        </section>
+
+        <!-- LADO DERECHO: FORMULARIO AZUL VIBRANTE (Estilo imagen 1) -->
+        <section class="form-side">
+            <div class="form-side-decor" aria-hidden="true"></div>
+
+            <div class="form-container">
+                <!-- Títulos -->
+                <div class="form-header">
+                    <h1 class="welcome-title">¡Bienvenido!</h1>
+                    <p class="welcome-subtitle">Inicia sesión con tus credenciales para acceder a la plataforma.</p>
                 </div>
 
-                <div class="form-field">
-                    <label for="password">Contraseña</label>
-                    <input
-                        id="password"
-                        name="password"
-                        type="password"
-                        [(ngModel)]="password"
-                        placeholder="********"
-                        autocomplete="current-password"
-                    />
+                <!-- Mensaje de Error (si existe) -->
+                <div *ngIf="errorMessage" class="alert-box error-alert" role="alert">
+                    <span class="material-icons alert-icon">error_outline</span>
+                    <span class="alert-text">{{ errorMessage }}</span>
                 </div>
 
-                <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
+                <!-- Mensaje Informativo (Olvidé contraseña / problemas) -->
+                <div *ngIf="helpMessage" class="alert-box info-alert" role="status">
+                    <span class="material-icons alert-icon">info</span>
+                    <span class="alert-text">{{ helpMessage }}</span>
+                    <button type="button" class="btn-close-alert" (click)="closeHelpMessage()" aria-label="Cerrar mensaje">×</button>
+                </div>
 
-                <button type="submit" class="btn-primary" [disabled]="isRedirecting">
-                    {{ isRedirecting ? 'Redirigiendo...' : 'Iniciar sesión' }}
-                </button>
-            </form>
-        </div>
+                <!-- Formulario de Acceso -->
+                <form (ngSubmit)="onSubmit()" novalidate class="login-form">
+                    <!-- Campo Email -->
+                    <div class="form-group">
+                        <label for="email" class="pill-label">Correo electrónico</label>
+                        <div class="pill-input-container">
+                            <span class="material-icons field-icon">alternate_email</span>
+                            <input
+                                id="email"
+                                name="email"
+                                type="email"
+                                [(ngModel)]="email"
+                                placeholder="tu.nombre@duocuc.cl"
+                                autocomplete="username"
+                                [disabled]="isRedirecting"
+                                required
+                            />
+                        </div>
+                    </div>
 
-        <div class="login-links">
-            <button type="button" class="link-button">¿Olvidaste tu contraseña?</button>
-            <button type="button" class="link-button">Problemas para iniciar sesión</button>
-        </div>
-    </div>
+                    <!-- Campo Contraseña -->
+                    <div class="form-group">
+                        <label for="password" class="pill-label">Contraseña</label>
+                        <div class="pill-input-container">
+                            <span class="material-icons field-icon">lock_outline</span>
+                            <input
+                                id="password"
+                                name="password"
+                                [type]="showPassword ? 'text' : 'password'"
+                                [(ngModel)]="password"
+                                placeholder="Ingresa tu contraseña"
+                                autocomplete="current-password"
+                                [disabled]="isRedirecting"
+                                required
+                            />
+                            <button
+                                type="button"
+                                class="btn-toggle-password"
+                                (click)="togglePassword()"
+                                [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Ver contraseña'"
+                                tabindex="0"
+                            >
+                                <span class="material-icons toggle-icon">
+                                    {{ showPassword ? 'visibility_off' : 'visibility' }}
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Fila de Opciones: Recordarme & Olvidé contraseña -->
+                    <div class="form-options">
+                        <label class="remember-label">
+                            <input
+                                type="checkbox"
+                                name="rememberMe"
+                                [(ngModel)]="rememberMe"
+                                class="custom-checkbox"
+                            />
+                            <span class="checkbox-custom-box"></span>
+                            <span class="remember-text">Recordarme</span>
+                        </label>
+                        <button
+                            type="button"
+                            class="link-text-button"
+                            (click)="showForgotInfo()"
+                        >
+                            ¿Olvidaste tu contraseña?
+                        </button>
+                    </div>
+
+                    <!-- Botones de Acción (Estilo imagen 1: botón naranja vibrante y secundario) -->
+                    <div class="action-buttons-group">
+                        <!-- Botón Principal (Naranja vibrante como en la imagen) -->
+                        <button
+                            type="submit"
+                            class="btn-cta-primary"
+                            [disabled]="isRedirecting"
+                        >
+                            <span *ngIf="isRedirecting" class="spinner" aria-hidden="true"></span>
+                            <span>{{ isRedirecting ? 'Iniciando sesión...' : 'Iniciar sesión' }}</span>
+                        </button>
+
+                        <!-- Botón Institucional Microsoft SSO -->
+                        <button
+                            type="button"
+                            class="btn-microsoft-sso"
+                            (click)="loginWithMicrosoft()"
+                            [disabled]="isRedirecting"
+                        >
+                            <svg class="ms-svg-icon" viewBox="0 0 21 21" width="18" height="18" aria-hidden="true">
+                                <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                                <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                                <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                            </svg>
+                            <span>Continuar con Microsoft</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Pie de Formulario: Ayuda -->
+                <div class="form-footer">
+                    <button type="button" class="link-footer-button" (click)="showTroubleInfo()">
+                        <span class="material-icons help-mini-icon">help_outline</span>
+                        <span>Problemas para iniciar sesión</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
 </div>

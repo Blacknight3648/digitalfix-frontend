@@ -1,7 +1,7 @@
 import { RenderMode, ServerRoute } from '@angular/ssr';
 
 // Todas las rutas del layout principal (dashboard, home, catalog, reports,
-// audit) dependen de MsalGuard, que solo existe en el bootstrap del navegador.
+// audit) dependen de authGuard, que usa MSAL y solo existe en el bootstrap del navegador.
 // Por eso se renderizan en el cliente en vez de pre-renderizarse en el servidor.
 export const serverRoutes: ServerRoute[] = [
   {

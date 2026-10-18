@@ -1,7 +1,13 @@
-
 /* =========================================================
-   LOGIN CORPORATIVO
+   LOGIN DIGITALFIX - ESTILO UNIFICADO CON LA PLATAFORMA
+   (Fondo gris-fondo, panel negro corporativo y acentos)
    ========================================================= */
+
+:host {
+    display: block;
+    width: 100%;
+    min-height: 100vh;
+}
 
 .login-page {
     position: relative;
@@ -9,356 +15,516 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40px 20px;
+    padding: 32px 20px;
+    background: var(--gris-fondo, #d9d9d9);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     overflow: hidden;
     box-sizing: border-box;
-    font-family: 'Inter', Arial, sans-serif;
-    background: #f4f6f8;
 }
 
 /* =========================================================
-   BACKGROUND
+   TARJETA PRINCIPAL DIVIDIDA (SPLIT CARD)
    ========================================================= */
 
-.login-bg {
-    position: absolute;
-    inset: 0;
-
-    background-image: url('../../assets/fondo_login.png');
-    background-size: cover;
-    background-position: center;
-
-    filter: grayscale(20%);
-    transform: scale(1.02);
-}
-
-/*
- * Overlay corporativo:
- * permite conservar la imagen pero evita que compita
- * visualmente con el formulario.
- */
-.login-overlay {
-    position: absolute;
-    inset: 0;
-
-    background:
-        linear-gradient(
-            90deg,
-            rgba(245, 248, 250, 0.94) 0%,
-            rgba(245, 248, 250, 0.88) 45%,
-            rgba(245, 248, 250, 0.72) 100%
-        );
-}
-
-/* =========================================================
-   CONTENT
-   ========================================================= */
-
-.login-content {
+.login-card-container {
     position: relative;
     z-index: 1;
+    display: grid;
+    grid-template-columns: 1.08fr 1fr;
+    width: 100%;
+    max-width: 960px;
+    min-height: 580px;
+    background: var(--blanco, #ffffff);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.12);
+    border: 1px solid var(--borde, #e6e6e6);
+    animation: fadeInCard 0.4s ease-out;
+}
 
+@keyframes fadeInCard {
+    from { opacity: 0; transform: translateY(12px) scale(0.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* =========================================================
+   LADO IZQUIERDO: ILUSTRACIÓN TECH & IDENTIDAD DE MARCA
+   ========================================================= */
+
+.brand-illustration-side {
+    background: var(--blanco, #ffffff);
+    padding: 36px 38px 28px;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     align-items: center;
-
-    width: 100%;
-    max-width: 430px;
+    border-right: 1px solid var(--borde, #e6e6e6);
 }
 
-/* =========================================================
-   TITLE
-   ========================================================= */
+.brand-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
 
-.login-title {
-    margin: 0 0 28px;
+.brand-identity {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
 
-    font-family: 'Roboto Light';
-    font-size: clamp(26px, 5vw, 36px);
-    font-weight: 800;
-    line-height: 1.15;
+.brand-logo {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+}
 
+.brand-name {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    color: var(--negro, #000000);
+}
+
+.brand-accent {
+    color: var(--asignada-fg, #1d4ed8);
+}
+
+.illustration-wrapper {
+    width: 100%;
+    max-width: 420px;
+    margin: 16px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tech-security-illustration {
+    width: 100%;
+    height: auto;
+    max-height: 280px;
+    display: block;
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.05));
+    transition: transform 0.3s ease;
+}
+
+.tech-security-illustration:hover {
+    transform: scale(1.015);
+}
+
+.brand-footer {
+    width: 100%;
     text-align: center;
-    letter-spacing: -0.5px;
+}
 
-    color: #0b1f33;
+.brand-tagline {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--texto-secundario, #4b5563);
+    max-width: 380px;
 }
 
 /* =========================================================
-   LOGIN CARD
+   LADO DERECHO: FORMULARIO NEGRO CORPORATIVO (ESTILO SIDEBAR)
    ========================================================= */
 
-.login-card {
+.form-side {
+    position: relative;
+    background: linear-gradient(160deg, #141922 0%, var(--negro, #000000) 100%);
+    color: var(--blanco, #ffffff);
+    padding: 42px 42px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.form-side-decor {
+    position: absolute;
+    top: -90px;
+    right: -90px;
+    width: 250px;
+    height: 250px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
+    pointer-events: none;
+}
+
+.form-container {
+    position: relative;
+    z-index: 1;
     width: 100%;
-    box-sizing: border-box;
-
-    padding: 36px;
-
-    background: rgba(255, 255, 255, 0.97);
-
-    border: 1px solid rgba(11, 31, 51, 0.08);
-    border-radius: 12px;
-
-    box-shadow:
-        0 20px 50px rgba(11, 31, 51, 0.12),
-        0 4px 12px rgba(11, 31, 51, 0.05);
+    max-width: 380px;
+    margin: 0 auto;
 }
 
-/* =========================================================
-   FORM
-   ========================================================= */
-
-.form-field {
-    margin-bottom: 20px;
+.form-header {
+    margin-bottom: 22px;
     text-align: left;
 }
 
-.form-field label {
-    display: block;
-
-    margin-bottom: 8px;
-
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.1px;
-
-    color: #263746;
+.welcome-title {
+    margin: 0 0 6px;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.15;
+    color: var(--blanco, #ffffff);
 }
 
-.form-field input {
-    width: 100%;
-    box-sizing: border-box;
-
-    height: 46px;
-    padding: 0 14px;
-
-    font-family: 'Inter', Arial, sans-serif;
-    font-size: 14px;
-    color: #17212b;
-
-    background: #ffffff;
-
-    border: 1px solid #d4dce3;
-    border-radius: 7px;
-
-    outline: none;
-
-    transition:
-        border-color 0.2s ease,
-        box-shadow 0.2s ease,
-        background-color 0.2s ease;
+.welcome-subtitle {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--texto-tenue, #9a9a9a);
 }
 
-.form-field input::placeholder {
-    color: #9aa6b2;
-}
-
-.form-field input:hover {
-    border-color: #aeb9c4;
-}
-
-.form-field input:focus {
-    border-color: #1e6a8d;
-
-    box-shadow:
-        0 0 0 3px rgba(30, 106, 141, 0.10);
-}
-
-/* =========================================================
-   ERROR
-   ========================================================= */
-
-.error-message {
-    margin: -8px 0 14px;
-
-    font-size: 13px;
+/* Alertas de Error y Ayuda */
+.alert-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 18px;
+    font-size: 12.5px;
     line-height: 1.4;
-
-    color: #b42318;
+    animation: fadeInAlert 0.2s ease-out;
 }
 
-/* =========================================================
-   PRIMARY BUTTON
-   ========================================================= */
+@keyframes fadeInAlert {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
-.btn-primary {
-    width: 100%;
-    height: 46px;
+.error-alert {
+    background: rgba(180, 35, 24, 0.25);
+    border: 1px solid rgba(253, 227, 227, 0.4);
+    color: var(--blanco, #ffffff);
+    backdrop-filter: blur(8px);
+}
 
-    margin-top: 6px;
-    padding: 0 16px;
+.info-alert {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: var(--blanco, #ffffff);
+    backdrop-filter: blur(8px);
+}
 
-    font-family: 'Inter', Arial, sans-serif;
-    font-size: 14px;
-    font-weight: 600;
+.alert-icon { font-size: 19px; flex-shrink: 0; }
+.alert-text { flex: 1; }
 
-    color: #ffffff;
-
-    background: #0b1f33;
-
+.btn-close-alert {
+    background: none;
     border: none;
-    border-radius: 7px;
-
+    color: var(--blanco, #ffffff);
+    font-size: 18px;
+    line-height: 1;
     cursor: pointer;
-
-    transition:
-        background-color 0.2s ease,
-        transform 0.15s ease,
-        box-shadow 0.2s ease;
+    padding: 0 4px;
+    opacity: 0.8;
 }
 
-.btn-primary:hover:not(:disabled) {
-    background: #123b5d;
+.btn-close-alert:hover { opacity: 1; }
 
-    box-shadow:
-        0 5px 14px rgba(11, 31, 51, 0.18);
+/* Campos del Formulario */
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
 
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+}
+
+.pill-label {
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.pill-input-container {
+    display: flex;
+    align-items: center;
+    background: var(--blanco, #ffffff);
+    border-radius: 9999px;
+    height: 48px;
+    padding: 0 16px 0 18px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    border: 1px solid transparent;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.pill-input-container:focus-within {
+    border-color: var(--asignada-fg, #1d4ed8);
+    box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.25), 0 6px 18px rgba(0, 0, 0, 0.2);
     transform: translateY(-1px);
 }
 
-.btn-primary:active:not(:disabled) {
-    transform: translateY(0);
-}
-
-.btn-primary:focus-visible {
-    outline: none;
-
-    box-shadow:
-        0 0 0 3px rgba(30, 106, 141, 0.18);
-}
-
-.btn-primary:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-}
-
-/* =========================================================
-   LINKS
-   ========================================================= */
-
-.login-links {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-
-    gap: 8px;
-
-    margin: 20px 0 22px;
-}
-
-.link-button {
-    padding: 0;
-
-    font-family: 'Inter', Arial, sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-
-    color: #1e6a8d;
-
-    background: none;
-    border: none;
-
-    text-decoration: none;
-
-    cursor: pointer;
-
-    transition: color 0.2s ease;
-}
-
-.link-button:hover {
-    color: #0b1f33;
-    text-decoration: underline;
-}
-
-/* =========================================================
-   MICROSOFT BUTTON
-   ========================================================= */
-
-.btn-microsoft {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    width: 100%;
-    height: 46px;
-
-    box-sizing: border-box;
-
-    gap: 10px;
-
-    padding: 0 20px;
-
-    font-family: 'Inter', Arial, sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-
-    color: #344054;
-
-    background: #ffffff;
-
-    border: 1px solid #d4dce3;
-    border-radius: 7px;
-
-    cursor: pointer;
-
-    transition:
-        background-color 0.2s ease,
-        border-color 0.2s ease,
-        box-shadow 0.2s ease;
-}
-
-.btn-microsoft:hover:not(:disabled) {
-    background: #f8fafb;
-    border-color: #b9c4ce;
-
-    box-shadow:
-        0 3px 8px rgba(11, 31, 51, 0.07);
-}
-
-.btn-microsoft:focus-visible {
-    outline: none;
-
-    box-shadow:
-        0 0 0 3px rgba(30, 106, 141, 0.10);
-}
-
-.btn-microsoft:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-}
-
-.ms-logo {
-    width: 18px;
-    height: 18px;
+.field-icon {
+    font-size: 20px;
+    color: var(--negro, #000000);
+    margin-right: 12px;
     flex-shrink: 0;
 }
 
-/* =========================================================
-   RESPONSIVE
-   ========================================================= */
-
-@media (max-width: 480px) {
-
-    .login-page {
-        padding: 28px 16px;
-    }
-
-    .login-content {
-        max-width: 100%;
-    }
-
-    .login-title {
-        margin-bottom: 22px;
-        font-size: 27px;
-    }
-
-    .login-card {
-        padding: 28px 22px;
-        border-radius: 10px;
-    }
-
-    .form-field {
-        margin-bottom: 18px;
-    }
+.pill-input-container input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--negro, #000000);
+    padding: 0;
 }
 
+.pill-input-container input::placeholder {
+    color: var(--texto-tenue, #9a9a9a);
+    font-weight: 400;
+}
+
+.btn-toggle-password {
+    background: none;
+    border: none;
+    padding: 4px;
+    margin-left: 6px;
+    cursor: pointer;
+    color: var(--texto-secundario, #4b5563);
+    display: flex;
+    align-items: center;
+    border-radius: 50%;
+    transition: color 0.2s ease;
+}
+
+.btn-toggle-password:hover { color: var(--negro, #000000); }
+.toggle-icon { font-size: 20px; }
+
+/* Opciones: Recordarme & Olvidé contraseña */
+.form-options {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 12.5px;
+}
+
+.remember-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.custom-checkbox {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.checkbox-custom-box {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.1);
+    display: inline-block;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.custom-checkbox:checked + .checkbox-custom-box {
+    background: var(--blanco, #ffffff);
+    border-color: var(--blanco, #ffffff);
+}
+
+.custom-checkbox:checked + .checkbox-custom-box::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 4px;
+    height: 8px;
+    border: solid var(--negro, #000000);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.remember-text {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+}
+
+.link-text-button {
+    background: none;
+    border: none;
+    padding: 0;
+    color: rgba(255, 255, 255, 0.85);
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.link-text-button:hover { color: var(--blanco, #ffffff); }
+
+/* Botones de Acción */
+.action-buttons-group {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    margin-top: 6px;
+}
+
+/* Botón Principal (Azul corporativo asignada de la plataforma o blanco) */
+.btn-cta-primary {
+    width: 100%;
+    height: 48px;
+    border: none;
+    border-radius: 9999px;
+    background: var(--asignada-fg, #1d4ed8);
+    color: var(--blanco, #ffffff);
+    font-family: inherit;
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(29, 78, 216, 0.35);
+    transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-cta-primary:hover:not(:disabled) {
+    transform: translateY(-1.5px);
+    background: #1e40af;
+    box-shadow: 0 8px 22px rgba(29, 78, 216, 0.45);
+}
+
+.btn-cta-primary:active:not(:disabled) { transform: translateY(0); }
+
+.btn-cta-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Botón Microsoft SSO */
+.btn-microsoft-sso {
+    width: 100%;
+    height: 46px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--blanco, #ffffff);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-microsoft-sso:hover:not(:disabled) {
+    transform: translateY(-1.5px);
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.btn-microsoft-sso:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.ms-svg-icon { flex-shrink: 0; }
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Pie del Formulario */
+.form-footer {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.link-footer-button {
+    background: none;
+    border: none;
+    padding: 4px 8px;
+    color: var(--texto-tenue, #9a9a9a);
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.link-footer-button:hover {
+    color: var(--blanco, #ffffff);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.help-mini-icon { font-size: 16px; }
+
+/* Responsive */
+@media (max-width: 900px) {
+    .login-card-container {
+        grid-template-columns: 1fr;
+        max-width: 460px;
+        min-height: auto;
+        border-radius: 18px;
+    }
+    .brand-illustration-side {
+        padding: 24px 26px 18px;
+        border-right: none;
+        border-bottom: 1px solid var(--borde, #e6e6e6);
+    }
+    .illustration-wrapper { margin: 8px 0; }
+    .tech-security-illustration { max-height: 165px; }
+    .brand-tagline { display: none; }
+    .form-side { padding: 34px 28px; }
+    .welcome-title { font-size: 28px; }
+}
+
+@media (max-width: 480px) {
+    .login-page { padding: 14px 10px; }
+    .login-card-container { border-radius: 16px; }
+    .brand-illustration-side { padding: 18px 18px 14px; }
+    .tech-security-illustration { max-height: 130px; }
+    .form-side { padding: 26px 18px; }
+    .welcome-title { font-size: 24px; }
+    .pill-input-container { height: 46px; }
+    .btn-cta-primary, .btn-microsoft-sso { height: 46px; font-size: 13.5px; }
+    .form-options { flex-direction: column; align-items: flex-start; gap: 8px; }
+}

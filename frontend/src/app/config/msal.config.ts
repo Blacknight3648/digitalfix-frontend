@@ -6,10 +6,7 @@ import {
   LogLevel,
   BrowserCacheLocation,
 } from '@azure/msal-browser';
-import {
-  MsalGuardConfiguration,
-  MsalInterceptorConfiguration,
-} from '@azure/msal-angular';
+import { MsalInterceptorConfiguration } from '@azure/msal-angular';
 import { environment } from '../environment/environment';
 
 /**
@@ -45,22 +42,11 @@ export function msalInstanceFactory(): IPublicClientApplication {
 }
 
 /**
- * 2. Configuración del Guard
- * Ataja a los usuarios que no han iniciado sesión y los redirige a Microsoft.
- */
-export function msalGuardConfigFactory(): MsalGuardConfiguration {
-  return {
-    interactionType: InteractionType.Redirect,
-    authRequest: {
-      scopes: ['user.read'],
-    },
-    loginFailedRoute: '/login-failed',
-  };
-}
-
-/**
- * 3. Configuración del Interceptor HTTP
+ * 2. Configuración del Interceptor HTTP
  * Añade automáticamente el token (Bearer <token>) a las peticiones hacia tu backend.
+ * Pide el token con acquireTokenSilent: si el access token está por vencer,
+ * MSAL lo renueva con el refresh token sin interrumpir al usuario; solo si la
+ * sesión de Microsoft expiró (InteractionRequired) redirige a iniciar sesión.
  */
 export function msalInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap = new Map<string, Array<string> | null>();

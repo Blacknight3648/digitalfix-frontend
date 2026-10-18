@@ -8,17 +8,24 @@
 const currentOrigin =
   typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4200';
 
+// Misma App Registration y tenant que validan los microservicios (AZURE_CLIENT_ID y
+// AZURE_TENANT_ID del .env de ms-login / ms-user): el access token que pide el
+// frontend lleva aud = api://<clientId> y scp = access_as_user, que es lo que exige
+// el backend. Si estos valores no coinciden, el backend rechaza el token con 401.
+const API_CLIENT_ID = '9494b59c-9c6e-4a0f-91ae-ae90212882e7';
+const TENANT_ID = '3fb8463e-0e33-4b7d-adc1-2a47c707831e';
+
 export const environment = {
   production: false,
   azure: {
-    clientId: '1a248ad8-d43b-42af-87f2-b177b352e235',
-    tenantId: '2845a269-a60f-4fdf-969c-2811937a2e85',
-    authority: 'https://login.microsoftonline.com/2845a269-a60f-4fdf-969c-2811937a2e85',
+    clientId: API_CLIENT_ID,
+    tenantId: TENANT_ID,
+    authority: `https://login.microsoftonline.com/${TENANT_ID}`,
     redirectUri: currentOrigin,
     postLogoutRedirectUri: currentOrigin,
-    protectedResourceScopes: ['api://digitalfix-api/Access.All'],
+    protectedResourceScopes: [`api://${API_CLIENT_ID}/access_as_user`],
   },
-  apiBaseUrl: 'http://localhost:8080',
+  apiBaseUrl: 'http://localhost:8081',
 };
 
 //Nota: pasar esto a variables de entorno en .env para mayor seguridad

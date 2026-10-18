@@ -3,7 +3,7 @@ import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { AppRole } from '../model/user.model';
 
-// Autorización por rol (sección 4 del enunciado). MsalGuard ya validó la sesión
+// Autorización por rol (sección 4 del enunciado). authGuard ya validó la sesión
 // a nivel del layout; este guard solo decide si el rol actual puede ver la ruta.
 export const roleGuard: CanActivateFn = (route) => {
     const authService = inject(AuthService);
