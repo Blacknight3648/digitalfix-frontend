@@ -1,0 +1,84 @@
+<fieldset class="fieldset">
+  <legend>Dirección de atención</legend>
+
+  @if (errorCatalogo) {
+    <p class="field-error">{{ errorCatalogo }}</p>
+  }
+
+  <div class="form-grid">
+    <div class="form-field">
+      <label for="dirRegion">Región *</label>
+      <select id="dirRegion" name="dirRegion" [(ngModel)]="d.idRegion"
+        (ngModelChange)="alCambiarRegion($event)" required>
+        <option [ngValue]="null" disabled>Selecciona una región...</option>
+        @for (region of regiones; track region.idRegion) {
+          <option [ngValue]="region.idRegion">{{ region.numeroRomano }} · {{ region.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label for="dirComuna">Comuna *</label>
+      <select id="dirComuna" name="dirComuna" [(ngModel)]="d.idComuna"
+        [disabled]="!d.idRegion || cargandoComunas" required>
+        <option [ngValue]="null" disabled>
+          {{ !d.idRegion ? 'Primero elige la región' : (cargandoComunas ? 'Cargando comunas...' : 'Selecciona una comuna...') }}
+        </option>
+        @for (comuna of comunas; track comuna.idComuna) {
+          <option [ngValue]="comuna.idComuna">{{ comuna.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label for="dirCalle">Calle *</label>
+      <input id="dirCalle" name="dirCalle" [(ngModel)]="d.calle" #calle="ngModel" maxlength="120"
+        pattern="^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9 .,#º°'/-]*$" placeholder="Av. Providencia" autocomplete="address-line1" required />
+      @if (calle.invalid && calle.touched) {
+        <span class="field-error">{{ calle.errors?.['required'] ? 'Indica la calle.' : 'La calle contiene caracteres no permitidos.' }}</span>
+      }
+    </div>
+
+    <div class="form-grid nested">
+      <div class="form-field">
+        <label for="dirNumero">Número *</label>
+        <input id="dirNumero" name="dirNumero" [(ngModel)]="d.numero" #numero="ngModel" maxlength="10"
+          pattern="^\s*(\d{1,6}\s*[A-Za-z]?|[Ss]\s*/?\s*[Nn])\s*$" placeholder="1234 o S/N" required />
+        @if (numero.invalid && numero.touched) {
+          <span class="field-error">Ej. 1234, 1234B o S/N.</span>
+        }
+      </div>
+      <div class="form-field">
+        <label for="dirDetalle">Depto / oficina</label>
+        <input id="dirDetalle" name="dirDetalle" [(ngModel)]="d.detalle" maxlength="60"
+          placeholder="Depto 501" autocomplete="address-line2" />
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label for="dirCodigoPostal">Código postal</label>
+      <input id="dirCodigoPostal" name="dirCodigoPostal" [ngModel]="d.codigoPostal"
+        (ngModelChange)="alEscribirCodigoPostal($event)" #codigoPostal="ngModel" inputmode="numeric"
+        pattern="^\d{7}$" maxlength="7" placeholder="7500000" autocomplete="postal-code" />
+      @if (codigoPostal.invalid && codigoPostal.touched) {
+        <span class="field-error">El código postal tiene 7 dígitos.</span>
+      } @else {
+        <span class="form-hint">
+          <a href="https://www.correos.cl/codigo-postal" target="_blank" rel="noopener noreferrer">Buscar en Correos de Chile</a>
+        </span>
+      }
+    </div>
+
+    <div class="form-field">
+      <label for="dirReferencia">Referencia</label>
+      <input id="dirReferencia" name="dirReferencia" [(ngModel)]="d.referencia" maxlength="200"
+        placeholder="Portón verde, frente a la plaza" />
+    </div>
+  </div>
+
+  @if (completaParaMapa) {
+    <a class="map-link" [href]="enlaceMapa" target="_blank" rel="noopener noreferrer">
+      <span class="material-icons">place</span> Verificar la dirección en Google Maps
+    </a>
+  }
+</fieldset>

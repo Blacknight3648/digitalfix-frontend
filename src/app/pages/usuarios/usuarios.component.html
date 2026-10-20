@@ -1,0 +1,221 @@
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2>Usuarios</h2>
+      <p>{{ usuariosFiltrados.length }} de {{ usuarios.length }} usuarios activos en digitalfix-ms-user</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-refresh" type="button" (click)="cargar()" [disabled]="cargando" title="Actualizar lista">
+        <span class="material-icons" [class.rotating]="cargando">refresh</span>
+      </button>
+      <button class="btn-primary" type="button" (click)="abrirCreacion()" [disabled]="!roles.length">+ Nuevo usuario</button>
+    </div>
+  </div>
+
+  @if (mensajeExito) {
+    <div class="alert alert-success">
+      <span class="material-icons">check_circle</span>
+      <span>{{ mensajeExito }}</span>
+      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
+    </div>
+  }
+  @if (mensajeError && !modalAbierto) {
+    <div class="alert alert-danger">
+      <span class="material-icons">error_outline</span>
+      <span>{{ mensajeError }}</span>
+      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
+    </div>
+  }
+
+  <div class="filters">
+    <div class="search-input-wrapper">
+      <span class="material-icons search-icon">search</span>
+      <input type="search" placeholder="Buscar por nombre, correo, empresa o área..." [(ngModel)]="terminoBusqueda" />
+    </div>
+    <div class="form-field">
+      <select [(ngModel)]="filtroRol" aria-label="Filtrar por rol">
+        <option value="">Todos los roles</option>
+        @for (rol of roles; track rol.id) {
+          <option [value]="rol.codigo">{{ rol.nombre }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Empresa / Área</th>
+          <th>Cuenta Microsoft</th>
+          <th>Registrado</th>
+          <th class="actions-col">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando) {
+          <tr>
+            <td colspan="6" class="loading-cell">
+              <div class="spinner-small"></div>
+              <span>Consultando usuarios en digitalfix-ms-user...</span>
+            </td>
+          </tr>
+        } @else {
+          @for (usuario of usuariosFiltrados; track usuario.id) {
+            <tr>
+              <td>
+                <div class="main-cell">
+                  <strong>{{ usuario.nombre }} {{ usuario.apellido }}</strong>
+                  <span class="sub-text">{{ usuario.email }}</span>
+                </div>
+              </td>
+              <td><span class="badge badge-rol">{{ usuario.nombreRol }}</span></td>
+              <td>
+                <div class="main-cell">
+                  <span>{{ usuario.nombreEmpresa }}</span>
+                  @if (usuario.telefono) {
+                    <span class="sub-text">{{ usuario.telefono | telefonoCl }}</span>
+                  }
+                  @if (usuario.area) {
+                    <span class="sub-text">{{ usuario.area }}</span>
+                  }
+                </div>
+              </td>
+              <td>
+                @if (usuario.userEntraId) {
+                  <span class="badge badge-activo">Vinculada</span>
+                } @else {
+                  <span class="badge badge-pendiente" title="Se vincula cuando inicie sesión por primera vez">Pendiente de primer login</span>
+                }
+              </td>
+              <td>{{ usuario.fechaCreacion | date:'d MMM y' }}</td>
+              <td>
+                <div class="row-actions">
+                  @if (!esUsuarioActual(usuario)) {
+                    <button class="btn-ghost" type="button" (click)="darDeBaja(usuario)">Dar de baja</button>
+                  }
+                  <button class="btn-secondary" type="button" (click)="abrirEdicion(usuario)">Editar</button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-hint">
+                <span class="material-icons empty-icon">manage_accounts</span>
+                <p>No hay usuarios que coincidan con la búsqueda.</p>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (modalAbierto) {
+  <div class="overlay" (click)="cerrarModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ idEditando === null ? 'Nuevo usuario' : 'Editar usuario' }}</h3>
+        <button type="button" class="material-icons close-btn" (click)="cerrarModal()">close</button>
+      </div>
+      <p class="modal-sub">
+        @if (idEditando === null) {
+          Usa el correo de su cuenta Microsoft del tenant: con él inicia sesión y queda con el rol que elijas.
+        } @else {
+          Los campos con * son obligatorios.
+        }
+      </p>
+
+      @if (mensajeError) {
+        <div class="alert alert-danger">
+          <span class="material-icons">error_outline</span>
+          <span>{{ mensajeError }}</span>
+        </div>
+      }
+
+      <form class="modal-body-form" #form="ngForm" (ngSubmit)="guardar()">
+        <div class="form-grid">
+          <div class="form-field full">
+            <label for="email">Correo *</label>
+            <input id="email" name="email" appCorreo [(ngModel)]="formulario.email" #email="ngModel" required />
+            @if (email.invalid && email.touched) {
+              <span class="field-error">{{ email.errors?.['required'] ? 'Indica el correo.' : 'Correo inválido (ej. nombre@empresa.cl).' }}</span>
+            }
+          </div>
+          <div class="form-field">
+            <label for="nombre">Nombres *</label>
+            <input id="nombre" name="nombre" appCapitalizar="nombre" [(ngModel)]="formulario.nombre" #nombre="ngModel"
+              maxlength="50" pattern="^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ '.-]*$" placeholder="Juan Andrés" autocomplete="given-name" required />
+            @if (nombre.invalid && nombre.touched) {
+              <span class="field-error">{{ nombre.errors?.['required'] ? 'Indica el nombre.' : 'Solo letras, espacios, apóstrofo y guion.' }}</span>
+            }
+          </div>
+          <div class="form-field">
+            <label for="apellido">Apellidos *</label>
+            <input id="apellido" name="apellido" appCapitalizar="nombre" [(ngModel)]="formulario.apellido" #apellido="ngModel"
+              maxlength="50" pattern="^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ '.-]*$" placeholder="Pérez González" autocomplete="family-name" required />
+            @if (apellido.invalid && apellido.touched) {
+              <span class="field-error">{{ apellido.errors?.['required'] ? 'Indica el apellido.' : 'Solo letras, espacios, apóstrofo y guion.' }}</span>
+            }
+          </div>
+          <div class="form-field">
+            <label for="rol">Rol *</label>
+            <select id="rol" name="idRol" [(ngModel)]="formulario.idRol" required>
+              <option [ngValue]="null" disabled>Selecciona un rol...</option>
+              @for (rol of roles; track rol.id) {
+                <option [ngValue]="rol.id">{{ rol.nombre }} ({{ rol.codigo }})</option>
+              }
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="empresa">Empresa *</label>
+            <select id="empresa" name="idEmpresa" [(ngModel)]="formulario.idEmpresa" required>
+              <option [ngValue]="null" disabled>Selecciona una empresa...</option>
+              @for (empresa of empresas; track empresa.id) {
+                <option [ngValue]="empresa.id">{{ empresa.razonSocial }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="telefono">Teléfono</label>
+            <input id="telefono" name="telefono" appTelefono [(ngModel)]="formulario.telefono" #telefono="ngModel" />
+            @if (telefono.invalid && telefono.touched) {
+              <span class="field-error">Debe tener 9 dígitos: +56 9 1234 5678.</span>
+            }
+          </div>
+          <div class="form-field">
+            <label for="area">Área</label>
+            @if (!creandoArea) {
+              <select id="area" name="idArea" [(ngModel)]="formulario.idArea">
+                <option [ngValue]="null">Sin área</option>
+                @for (area of areas; track area.id) {
+                  <option [ngValue]="area.id">{{ area.nombre }}</option>
+                }
+              </select>
+              <span class="form-hint"><a href="#" (click)="$event.preventDefault(); abrirAreaNueva()">+ Agregar un área nueva</a></span>
+            } @else {
+              <div class="inline-add">
+                <input id="area" name="areaNueva" appCapitalizar="primera" [(ngModel)]="nombreAreaNueva"
+                  [ngModelOptions]="{ standalone: true }" maxlength="80" placeholder="Nombre del área"
+                  (keydown.enter)="$event.preventDefault(); guardarAreaNueva()" />
+                <button type="button" class="btn-secondary" (click)="guardarAreaNueva()"
+                  [disabled]="guardandoArea || !nombreAreaNueva.trim()">Agregar</button>
+                <button type="button" class="btn-ghost" (click)="cancelarAreaNueva()">Cancelar</button>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="guardando || form.invalid">
+            {{ guardando ? 'Guardando...' : (idEditando === null ? 'Crear usuario' : 'Guardar cambios') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

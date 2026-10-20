@@ -1,0 +1,39 @@
+/* Formulario a página completa: secciones con título a la izquierda y campos a la derecha. */
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--texto-secundario);
+  text-decoration: none;
+  margin-bottom: 10px;
+}
+.back-link:hover { color: var(--primario); }
+.back-link .material-icons { font-size: 16px; }
+
+.page-form { display: flex; flex-direction: column; max-width: 1080px; }
+
+.form-section {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 32px;
+  padding: 24px 0;
+  border-top: 1px solid var(--borde);
+}
+.section-head h3 { margin: 0 0 4px; font-size: 14px; font-weight: 600; color: var(--texto); }
+.section-head p { margin: 0; font-size: 12.5px; color: var(--texto-secundario); }
+
+.page-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 0 8px;
+  border-top: 1px solid var(--borde);
+}
+.page-actions .btn-secondary { display: inline-flex; align-items: center; padding: 8px 16px; font-size: 13px; text-decoration: none; }
+
+@media (max-width: 860px) {
+  .form-section { grid-template-columns: 1fr; gap: 14px; }
+}

@@ -1,0 +1,48 @@
+<div class="topbar">
+  <div class="topbar-title">
+    <span class="breadcrumb">DigitalFix</span>
+    <span class="material-icons breadcrumb-sep">chevron_right</span>
+    <span class="current-page">{{ pageTitle() }}</span>
+  </div>
+
+  <div class="topbar-actions">
+    @if (canSwitchRole) {
+    <select
+      class="role-select"
+      title="Ver la app con las vistas de otro rol (solo Superadmin)"
+      [ngModel]="currentRole"
+      (ngModelChange)="onRoleChange($event)"
+    >
+      @for (role of roles; track role) {
+        <option [value]="role">Ver como {{ roleLabel[role] }}</option>
+      }
+    </select>
+    }
+
+    <div class="icons">
+      <button class="icon-btn" type="button" title="Notificaciones">
+        <span class="material-icons">notifications_none</span>
+      </button>
+      <button class="icon-btn" type="button" title="Soporte técnico">
+        <span class="material-icons">support_agent</span>
+      </button>
+    </div>
+
+    <div class="divider"></div>
+
+    @if (currentUser) {
+    <div class="user-chip" [title]="currentUser.name + ' · ' + currentUser.email">
+      <div class="user-text">
+        <span class="user-name">{{ displayName }}</span>
+        <span class="user-role">{{ roleLabel[currentUser.role] }}</span>
+      </div>
+      <span class="avatar">{{ initials }}</span>
+    </div>
+    }
+
+    <button class="btn-logout" type="button" title="Cerrar sesión" (click)="onLogout()">
+      <span class="material-icons">logout</span>
+      <span class="logout-label">Salir</span>
+    </button>
+  </div>
+</div>
