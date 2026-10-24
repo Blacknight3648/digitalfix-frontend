@@ -6,17 +6,18 @@ Frontend del sistema **DigitalFix**, una plataforma de órdenes de trabajo de ma
 
 ## Stack tecnológico
 
-- **Framework**: Angular 19 (standalone components + SSR)
+- **Framework**: Angular 20 LTS (standalone components + SSR)
 - **Autenticación**: Azure AD / Microsoft Entra ID vía `@azure/msal-angular` y `@azure/msal-browser`
 - **Servidor SSR**: Express (`@angular/ssr`)
-- **Lenguaje**: TypeScript
+- **Lenguaje**: TypeScript 5.9
+- **Runtime del contenedor**: Node.js 22 LTS
 - **Estilos**: SCSS
 
 ---
 
 ## Requisitos
 
-- [Node.js](https://nodejs.org/) 20 o superior
+- [Node.js](https://nodejs.org/) 22 LTS (Angular 20 exige 20.19+, 22.12+ o 24+)
 - npm
 - [Docker](https://www.docker.com/) (opcional, para ejecutar en contenedor)
 
@@ -96,6 +97,21 @@ npm run build
 
 El resultado queda en `dist/digital-fix/`, con dos carpetas: `browser/` (bundle estático) y `server/` (servidor SSR de Express, `server.mjs`).
 
+### Rendimiento y responsive
+
+Objetivo: que la app cargue en 1–2 s. Medido con Chrome y red 4G simulada (9 Mbps, 85 ms), el login pasó de 1,41 s y 1.317 kB a **0,50 s y 413 kB**.
+
+| Medida | Dónde |
+|---|---|
+| Rutas en carga diferida (`loadComponent`) y precarga en segundo plano (`PreloadAllModules`): el bundle inicial solo trae login y layout; cada pantalla es un chunk de 5–12 kB. | `app.routes.ts`, `main.ts` |
+| Compresión gzip/brotli en el servidor SSR (antes todo viajaba sin comprimir). | `server.ts` (`compression`) |
+| Logo en PNG de 8 kB (`digitalfix-128.png`, `favicon-32.png`); `digitalfix.svg` trae PNGs de 2000 px incrustados y pesa 146 kB. | `public/`, `index.html` |
+| `preconnect` a Google Fonts y `display=block` para la fuente de íconos. | `index.html` |
+
+Presupuesto del bundle inicial (`angular.json`): aviso en 700 kB. Lo que queda en el bundle inicial es Angular más MSAL, que debe cargarse antes de arrancar la app para procesar el regreso desde Microsoft (`prepareAuth`); viaja comprimido en ~166 kB.
+
+Layout responsive: menú completo (≥ 1200 px), riel de íconos (881–1199 px) y panel deslizable con botón ☰ (≤ 880 px, se cierra con Escape, al tocar el fondo o al navegar). En teléfonos (≤ 640 px) las tablas se muestran como tarjetas apiladas y los campos usan 16 px para evitar el zoom automático de iOS.
+
 ---
 
 ## Dockerización
@@ -141,8 +157,8 @@ El `redirectUri` de MSAL se calcula dinámicamente a partir de `window.location.
 
 ### Detalle del Dockerfile
 
-- **Etapa `build`**: imagen `node:20-alpine`, instala dependencias con `npm ci` y ejecuta `ng build --configuration production`, generando el bundle SSR (`browser/` + `server/`).
-- **Etapa `runtime`**: imagen `node:20-alpine` liviana, instala solo dependencias de producción (`npm ci --omit=dev`) y copia el resultado del build. Se ejecuta con `node dist/digital-fix/server/server.mjs`, sirviendo tanto los assets estáticos como el renderizado en servidor.
+- **Etapa `build`**: imagen `node:22-alpine`, instala dependencias con `npm ci` y ejecuta `ng build --configuration production`, generando el bundle SSR (`browser/` + `server/`).
+- **Etapa `runtime`**: imagen `node:22-alpine` liviana, instala solo dependencias de producción (`npm ci --omit=dev`) y copia el resultado del build. Se ejecuta con `node dist/digital-fix/server/server.mjs`, sirviendo tanto los assets estáticos como el renderizado en servidor.
 
 ---
 
