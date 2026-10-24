@@ -275,18 +275,103 @@
         </div>
       }
 
-      <!-- Repuestos utilizados -->
-      @if (ordenSeleccionada.repuestos.length > 0) {
+      @if (mensajeExitoDetalle) {
+        <div class="alert alert-success">
+          <span class="material-icons">check_circle</span>
+          <span>{{ mensajeExitoDetalle }}</span>
+        </div>
+      }
+      @if (mensajeErrorDetalle) {
+        <div class="alert alert-danger">
+          <span class="material-icons">error_outline</span>
+          <span>{{ mensajeErrorDetalle }}</span>
+        </div>
+      }
+
+      <!-- Asignación (PUT /api/ordenes-trabajo/{id}/cuadrilla): pasa la orden a ASIGNADA y descuenta el stock -->
+      @if (puedeOperar() && ordenSeleccionada.estado === 'CREADA') {
         <div class="detail-block">
-          <h4>Repuestos consumidos</h4>
-          <ul class="services-list">
-            @for (rep of ordenSeleccionada.repuestos; track rep.idDetalle) {
-              <li>
-                <span>Repuesto #{{ rep.idRepuesto }} (Proveedor #{{ rep.idProveedor }})</span>
-                <span>Cantidad: {{ rep.cantidadUtilizada }}</span>
-              </li>
+          <h4>Asignar cuadrilla</h4>
+          @if (cuadrillasDisponibles.length) {
+            <div class="inline-form">
+              <select name="cuadrilla" [(ngModel)]="idCuadrillaElegida" [disabled]="operandoDetalle">
+                @for (c of cuadrillasDisponibles; track c.idCuadrilla) {
+                  <option [ngValue]="c.idCuadrilla">{{ c.nombre }} · {{ c.cantidadMiembros }} integrantes</option>
+                }
+              </select>
+              <button type="button" class="btn-primary" [disabled]="operandoDetalle || !idCuadrillaElegida"
+                (click)="asignarCuadrilla(ordenSeleccionada)">
+                {{ operandoDetalle ? 'Asignando...' : 'Asignar' }}
+              </button>
+            </div>
+            <span class="field-hint">
+              @if (ordenSeleccionada.repuestos.length) {
+                Al asignar se descuenta del stock cada repuesto de esta orden. Si alguno no alcanza, la orden no se asigna.
+              } @else {
+                Esta orden no tiene repuestos: agrégalos abajo antes de asignar para reservar su stock.
+              }
+            </span>
+          } @else {
+            <p class="field-hint">No hay cuadrillas disponibles (todas están en terreno o inactivas).</p>
+          }
+        </div>
+      }
+
+      <!-- Repuestos de la orden (stock en ms-catalog) -->
+      @if (ordenSeleccionada.repuestos.length > 0 || (puedeOperar() && esEditable(ordenSeleccionada))) {
+        <div class="detail-block">
+          <h4>
+            Repuestos
+            @if (ordenSeleccionada.repuestos.length) {
+              <span class="field-hint">· {{ stockComprometido(ordenSeleccionada) ? 'descontados del stock' : 'se descuentan al asignar' }}</span>
             }
-          </ul>
+          </h4>
+          @if (ordenSeleccionada.repuestos.length) {
+            <ul class="services-list">
+              @for (rep of ordenSeleccionada.repuestos; track rep.idDetalle) {
+                <li>
+                  <span>
+                    {{ nombreRepuesto(rep) }}
+                    <span class="field-hint">· {{ nombreProveedor(rep.idProveedor) }}</span>
+                  </span>
+                  <span class="repuesto-acciones">
+                    <strong>× {{ rep.cantidadUtilizada }}</strong>
+                    @if (puedeOperar() && esEditable(ordenSeleccionada)) {
+                      <button type="button" class="btn-ghost" [disabled]="operandoDetalle"
+                        (click)="quitarRepuesto(ordenSeleccionada, rep)">Quitar</button>
+                    }
+                  </span>
+                </li>
+              }
+            </ul>
+          }
+
+          @if (puedeOperar() && esEditable(ordenSeleccionada)) {
+            <div class="inline-form">
+              <select name="repuesto" [(ngModel)]="formularioRepuesto.idRepuesto" [disabled]="operandoDetalle">
+                <option [ngValue]="null" disabled>{{ repuestosCatalogo.length ? 'Repuesto del catálogo...' : 'Cargando catálogo...' }}</option>
+                @for (r of repuestosCatalogo; track r.idRepuesto) {
+                  <option [ngValue]="r.idRepuesto">{{ r.codigo }} · {{ r.nombre }} ({{ r.stockDisponible }} en stock)</option>
+                }
+              </select>
+              <select name="proveedor" [(ngModel)]="formularioRepuesto.idProveedor" [disabled]="operandoDetalle">
+                <option [ngValue]="null" disabled>{{ proveedoresProductos.length ? 'Proveedor...' : 'Sin proveedores de productos' }}</option>
+                @for (p of proveedoresProductos; track p.idProveedor) {
+                  <option [ngValue]="p.idProveedor">{{ p.razonSocial }}</option>
+                }
+              </select>
+              <input class="input-cantidad" name="cantidad" type="number" min="1" max="9999" step="1"
+                [(ngModel)]="formularioRepuesto.cantidad" [disabled]="operandoDetalle" aria-label="Cantidad" />
+              <button type="button" class="btn-secondary" [disabled]="operandoDetalle || !formularioRepuesto.idRepuesto"
+                (click)="agregarRepuesto(ordenSeleccionada)">Agregar</button>
+            </div>
+            @if (repuestoElegido; as r) {
+              <span class="field-hint" [class.text-alerta]="r.stockDisponible < (formularioRepuesto.cantidad ?? 0)">
+                {{ r.stockDisponible }} disponibles (mínimo {{ r.stockMinimo }}).
+                {{ stockComprometido(ordenSeleccionada) ? 'La orden ya está asignada: se descuenta al agregar.' : 'Se descuenta al asignar la orden.' }}
+              </span>
+            }
+          }
         </div>
       }
 
