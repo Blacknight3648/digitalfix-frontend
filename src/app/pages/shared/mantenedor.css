@@ -80,7 +80,7 @@
   font-size: 13px;
   margin-bottom: 16px;
 }
-.alert .material-icons { font-size: 20px; flex-shrink: 0; }
+.alert .material-icons { font-size: 20px; flex: none; }
 .alert span { flex: 1; }
 .btn-close-alert { background: transparent; border: none; font-size: 18px; line-height: 1; cursor: pointer; opacity: 0.6; padding: 0 4px; color: inherit; }
 .btn-close-alert:hover { opacity: 1; }
@@ -258,3 +258,62 @@ a.btn-primary, a.btn-secondary { display: inline-flex; align-items: center; text
 /* Título de sección dentro de una tarjeta (panel de mensajería) */
 .section-title { margin: 24px 0 10px; font-size: 14px; font-weight: 600; color: var(--texto); }
 .section-title:first-of-type { margin-top: 8px; }
+
+/* Stock de repuestos (Catálogo técnico) */
+.badge-alerta { background: var(--cancelada-bg); color: var(--cancelada-fg); }
+.text-alerta { color: var(--cancelada-fg); font-weight: 600; }
+.stock-num { font-variant-numeric: tabular-nums; }
+.filters .checkbox-field { white-space: nowrap; }
+
+/* =========================================================
+   Tablas responsivas
+   - Tablet (≤ 1199px): ancho mínimo menor, cabe junto al menú en riel.
+   - Teléfono (≤ 640px): cada fila es una tarjeta apilada; el nombre ocupa el
+     ancho completo, los datos cortos fluyen en línea y las acciones van al pie.
+     Los encabezados siguen en el HTML para lectores de pantalla.
+   ========================================================= */
+@media (max-width: 1199px) {
+  table { min-width: 720px; }
+}
+
+/* Los botones de acción nunca se parten en dos líneas ("Ver / detalle") */
+.row-actions button, .row-actions a { white-space: nowrap; }
+
+@media (max-width: 640px) {
+  .table-wrap { overflow-x: visible; }
+  table { min-width: 0; }
+  thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    padding: 14px 2px;
+    border-bottom: 1px solid var(--borde);
+  }
+  tbody tr:hover { background: transparent; }
+  tbody td { display: block; padding: 0; border: none; }
+  tbody td:has(.main-cell),
+  tbody td:has(.row-actions),
+  tbody td.loading-cell,
+  tbody td.empty-hint { flex-basis: 100%; }
+  tbody td.loading-cell,
+  tbody td.empty-hint { padding: 32px 0; }
+  .row-actions { justify-content: flex-start; flex-wrap: wrap; }
+  .row-actions button { min-height: 36px; }
+}
+
+@media (max-width: 640px) {
+  .card-header .header-actions { flex-wrap: wrap; }
+  .filters { flex-wrap: wrap; }
+  .filters .search-input-wrapper { flex: 1 1 100%; }
+  /* 16px evita el zoom automático de iOS al enfocar un campo */
+  .search-input-wrapper input, .form-field input, .form-field select, .form-field textarea { font-size: 16px; }
+}

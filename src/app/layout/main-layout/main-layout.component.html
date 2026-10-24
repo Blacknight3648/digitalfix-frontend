@@ -1,9 +1,11 @@
-<div class="app-shell">
+<div class="app-shell" [class.menu-abierto]="menu.abierto()">
   <app-sidebar />
+  <!-- Fondo oscuro del panel móvil: tocarlo cierra el menú -->
+  <div class="menu-fondo" (click)="menu.cerrar()" aria-hidden="true"></div>
   <div class="content-wrapper">
     <app-topbar />
-    <div class="content-body">
+    <main class="content-body">
       <router-outlet />
-    </div>
+    </main>
   </div>
 </div>

@@ -6,6 +6,7 @@ import { ActivatedRouteSnapshot, NavigationEnd, Router } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { APP_ROLES, AppRole, APP_ROLE_LABEL } from '../../model/user.model';
+import { EstadoMenuService } from '../estado-menu.service';
 
 @Component({
     standalone: true,
@@ -17,6 +18,7 @@ import { APP_ROLES, AppRole, APP_ROLE_LABEL } from '../../model/user.model';
 export class TopbarComponent {
     private readonly router = inject(Router);
     private readonly authService = inject(AuthService);
+    readonly menu = inject(EstadoMenuService);
 
     readonly roles: AppRole[] = APP_ROLES;
     readonly roleLabel = APP_ROLE_LABEL;

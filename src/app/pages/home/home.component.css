@@ -88,7 +88,7 @@
     margin-bottom: 16px;
     animation: fadeIn 0.2s ease-in-out;
   }
-  .alert .material-icons { font-size: 20px; flex-shrink: 0; }
+  .alert .material-icons { font-size: 20px; flex: none; }
   .alert span { flex: 1; }
   .btn-close-alert {
     background: transparent;
@@ -431,3 +431,81 @@
   }
 
   .field-hint { font-size: 11.5px; color: var(--texto-secundario); }
+
+  /* Operación de la orden en el detalle: asignar cuadrilla y agregar repuestos */
+  .inline-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .inline-form select, .inline-form input {
+    font-size: 13px;
+    padding: 8px 10px;
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+    background: #fafafa;
+    min-width: 0;
+  }
+  .inline-form select { flex: 1 1 180px; }
+  .inline-form .input-cantidad { width: 76px; flex: 0 0 76px; }
+  .repuesto-acciones { display: inline-flex; align-items: center; gap: 10px; }
+  .detail-block h4 .field-hint { font-weight: 400; text-transform: none; letter-spacing: 0; }
+  .text-alerta { color: var(--cancelada-fg); font-weight: 600; }
+
+  @media (max-width: 640px) {
+    .inline-form select { flex-basis: 100%; }
+  }
+
+/* =========================================================
+   Tablas responsivas
+   - Tablet (≤ 1199px): ancho mínimo menor, cabe junto al menú en riel.
+   - Teléfono (≤ 640px): cada fila es una tarjeta apilada; el nombre ocupa el
+     ancho completo, los datos cortos fluyen en línea y las acciones van al pie.
+     Los encabezados siguen en el HTML para lectores de pantalla.
+   ========================================================= */
+@media (max-width: 1199px) {
+  table { min-width: 720px; }
+}
+
+/* Los botones de acción nunca se parten en dos líneas ("Ver / detalle") */
+.row-actions button, .row-actions a { white-space: nowrap; }
+
+@media (max-width: 640px) {
+  .table-wrap { overflow-x: visible; }
+  table { min-width: 0; }
+  thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    padding: 14px 2px;
+    border-bottom: 1px solid var(--borde);
+  }
+  tbody tr:hover { background: transparent; }
+  tbody td { display: block; padding: 0; border: none; }
+  tbody td:has(.client-cell),
+  tbody td:has(.row-actions),
+  tbody td.loading-cell,
+  tbody td.empty-hint { flex-basis: 100%; }
+  tbody td.loading-cell,
+  tbody td.empty-hint { padding: 32px 0; }
+  .row-actions { justify-content: flex-start; flex-wrap: wrap; }
+  .row-actions button { min-height: 36px; }
+}
+
+/* Filtros de Órdenes: el rango de fechas se acomoda en vez de desbordar la página */
+.date-filters { flex-wrap: wrap; min-width: 0; }
+.date-filters input { min-width: 0; }
+
+@media (max-width: 640px) {
+  .search-input-wrapper { min-width: 0; flex: 1 1 100%; }
+  .filters select { flex: 1 1 auto; }
+  .date-filters { flex: 1 1 100%; display: grid; grid-template-columns: auto 1fr; gap: 8px; }
+  .date-filters input { width: 100%; }
+  .service-desc { max-width: none; }
+  .search-input-wrapper input, .filters select, .filters input, .form-field input, .form-field select, .form-field textarea { font-size: 16px; }
+}
