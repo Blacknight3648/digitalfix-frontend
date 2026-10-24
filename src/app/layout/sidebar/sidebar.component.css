@@ -1,0 +1,178 @@
+.sidebar {
+  flex: 1;
+  background: var(--blanco);
+  border-right: 1px solid var(--borde);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+  min-height: 100%;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px;
+  margin-bottom: 28px;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.brand-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.brand-sub {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--primario);
+}
+
+.nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-section {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+  padding: 0 12px 6px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--texto-secundario);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-link .material-icons {
+  font-size: 20px;
+}
+
+.nav-link:hover {
+  background: var(--gris-suave);
+  color: var(--texto);
+}
+
+.nav-link.selected {
+  background: var(--primario-suave);
+  color: var(--primario);
+  font-weight: 600;
+}
+
+.sidebar-spacer {
+  flex: 1;
+}
+
+.sidebar-footer {
+  font-size: 11px;
+  color: var(--texto-tenue);
+  padding: 12px 12px 0;
+  border-top: 1px solid var(--borde);
+}
+
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Solo existe en el panel móvil */
+.btn-cerrar-menu {
+  display: none;
+}
+
+/* Riel de íconos (881–1199px): mismo menú sin textos; el nombre queda en el title */
+@media (max-width: 1199px) and (min-width: 881px) {
+  .sidebar {
+    padding: 20px 10px;
+    align-items: center;
+  }
+
+  .sidebar-brand {
+    padding: 0;
+    margin-bottom: 24px;
+  }
+
+  .brand-text,
+  .nav-section,
+  .nav-label,
+  .sidebar-footer {
+    display: none;
+  }
+
+  .nav-list {
+    width: 100%;
+    align-items: center;
+  }
+
+  .nav-link {
+    justify-content: center;
+    width: 48px;
+    height: 44px;
+    padding: 0;
+  }
+}
+
+/* Panel deslizable (≤ 880px): el menú completo, con botón para cerrarlo */
+@media (max-width: 880px) {
+  .sidebar {
+    min-height: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 16px 12px;
+    border-right: none;
+  }
+
+  .sidebar-brand {
+    margin-bottom: 20px;
+  }
+
+  .btn-cerrar-menu {
+    display: grid;
+    place-items: center;
+    margin-left: auto;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--texto-secundario);
+    cursor: pointer;
+  }
+
+  .btn-cerrar-menu:hover {
+    background: var(--gris-suave);
+    color: var(--texto);
+  }
+
+  /* Áreas táctiles de al menos 44px */
+  .nav-link {
+    min-height: 44px;
+  }
+}

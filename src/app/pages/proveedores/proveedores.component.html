@@ -1,0 +1,204 @@
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2>Proveedores</h2>
+      <p>{{ proveedoresFiltrados.length }} de {{ proveedores.length }} proveedores de servicios y productos</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-refresh" type="button" (click)="cargar()" [disabled]="cargando" title="Actualizar lista">
+        <span class="material-icons" [class.rotating]="cargando">refresh</span>
+      </button>
+      <button class="btn-primary" type="button" (click)="abrirCreacion()">+ Nuevo proveedor</button>
+    </div>
+  </div>
+
+  @if (mensajeExito) {
+    <div class="alert alert-success">
+      <span class="material-icons">check_circle</span>
+      <span>{{ mensajeExito }}</span>
+      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
+    </div>
+  }
+  @if (mensajeError && !modalAbierto) {
+    <div class="alert alert-danger">
+      <span class="material-icons">error_outline</span>
+      <span>{{ mensajeError }}</span>
+      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
+    </div>
+  }
+
+  <div class="filters">
+    <div class="search-input-wrapper">
+      <span class="material-icons search-icon">search</span>
+      <input type="search" placeholder="Buscar por razón social, RUT, giro, correo o comuna..." [(ngModel)]="terminoBusqueda" />
+    </div>
+    <div class="form-field">
+      <select [(ngModel)]="filtroTipo" aria-label="Filtrar por tipo">
+        <option value="">Todos los tipos</option>
+        @for (tipo of tipos; track tipo) {
+          <option [value]="tipo">{{ etiquetaTipo[tipo] }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Proveedor</th>
+          <th>Tipo</th>
+          <th>Contacto</th>
+          <th>Dirección</th>
+          <th class="actions-col">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando) {
+          <tr>
+            <td colspan="5" class="loading-cell">
+              <div class="spinner-small"></div>
+              <span>Consultando proveedores en digitalfix-ms-workorders...</span>
+            </td>
+          </tr>
+        } @else {
+          @for (proveedor of proveedoresFiltrados; track proveedor.idProveedor) {
+            <tr>
+              <td>
+                <div class="main-cell">
+                  <strong>{{ proveedor.razonSocial }}</strong>
+                  <span class="sub-text">{{ proveedor.rut }}{{ proveedor.giro ? ' · ' + proveedor.giro : '' }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="badge" [class.badge-productos]="proveedor.tipo === 'PRODUCTOS'"
+                  [class.badge-servicios]="proveedor.tipo === 'SERVICIOS'">{{ etiquetaTipo[proveedor.tipo] }}</span>
+              </td>
+              <td>
+                <div class="main-cell">
+                  <span>{{ proveedor.email }}</span>
+                  <span class="sub-text">{{ proveedor.telefono | telefonoCl }}</span>
+                </div>
+              </td>
+              <td>
+                @if (proveedor.direccion; as dir) {
+                  <div class="main-cell">
+                    <a class="map-link inline" [href]="enlaceMapa(dir.textoCompleto)" target="_blank" rel="noopener noreferrer"
+                      title="Ver en Google Maps">{{ dir.calle }} {{ dir.numero }}{{ dir.detalle ? ', ' + dir.detalle : '' }}</a>
+                    <span class="sub-text">{{ dir.comuna }}, {{ dir.region }}</span>
+                  </div>
+                } @else {
+                  <span class="badge badge-pendiente" title="Edita el proveedor para agregar su dirección">Sin dirección</span>
+                }
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn-ghost" type="button" (click)="eliminar(proveedor)">Eliminar</button>
+                  <button class="btn-secondary" type="button" (click)="abrirEdicion(proveedor)">Editar</button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="empty-hint">
+                <span class="material-icons empty-icon">local_shipping</span>
+                <p>No hay proveedores que coincidan con la búsqueda.</p>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (modalAbierto) {
+  <div class="overlay" (click)="cerrarModal()">
+    <div class="modal modal-wide" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ idEditando === null ? 'Nuevo proveedor' : 'Editar proveedor' }}</h3>
+        <button type="button" class="material-icons close-btn" (click)="cerrarModal()">close</button>
+      </div>
+      <p class="modal-sub">Los campos con * son obligatorios.</p>
+
+      @if (mensajeError) {
+        <div class="alert alert-danger">
+          <span class="material-icons">error_outline</span>
+          <span>{{ mensajeError }}</span>
+        </div>
+      }
+
+      <form class="modal-body-form" #form="ngForm" (ngSubmit)="guardar()">
+        <div class="form-grid">
+          <div class="form-field full">
+            <span class="field-label">Tipo de proveedor *</span>
+            <div class="segmented" role="radiogroup" aria-label="Tipo de proveedor">
+              @for (tipo of tipos; track tipo) {
+                <label [class.selected]="formulario.tipo === tipo" [title]="descripcionTipo[tipo]">
+                  <input type="radio" name="tipo" [value]="tipo" [(ngModel)]="formulario.tipo" required />
+                  <span>
+                    {{ etiquetaTipo[tipo] }}
+                    <small class="sub-text">{{ descripcionTipo[tipo] }}</small>
+                  </span>
+                </label>
+              }
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="rut">RUT *</label>
+            <input id="rut" name="rut" appRut [(ngModel)]="formulario.rut" #rut="ngModel"
+              [disabled]="idEditando !== null" required />
+            @if (idEditando !== null) {
+              <span class="form-hint">El RUT no se puede modificar.</span>
+            } @else if (rut.errors?.['rut'] && (rut.touched || formulario.rut.length >= 9)) {
+              <span class="field-error">RUT inválido: revisa el número y el dígito verificador.</span>
+            } @else if (rut.errors?.['required'] && rut.touched) {
+              <span class="field-error">Indica el RUT.</span>
+            }
+          </div>
+          <div class="form-field">
+            <label for="razonSocial">Razón social *</label>
+            <input id="razonSocial" name="razonSocial" [(ngModel)]="formulario.razonSocial" #razon="ngModel" maxlength="150"
+              pattern="^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9 .,&'()/-]*$" placeholder="Eléctrica del Sur SpA" autocomplete="organization" required />
+            @if (razon.invalid && razon.touched) {
+              <span class="field-error">{{ razon.errors?.['required'] ? 'Indica la razón social.' : 'La razón social contiene caracteres no permitidos.' }}</span>
+            }
+          </div>
+          <div class="form-field full">
+            <label for="giro">Giro</label>
+            <input id="giro" name="giro" appCapitalizar="primera" [(ngModel)]="formulario.giro" #giro="ngModel" maxlength="150"
+              pattern="^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9 .,&'()/-]*$"
+              [placeholder]="formulario.tipo === 'PRODUCTOS' ? 'Venta de materiales eléctricos' : 'Servicios de mantención eléctrica'" />
+            @if (giro.invalid && giro.touched) {
+              <span class="field-error">El giro contiene caracteres no permitidos.</span>
+            }
+          </div>
+          <div class="form-field">
+            <label for="telefono">Teléfono *</label>
+            <input id="telefono" name="telefono" appTelefono [(ngModel)]="formulario.telefono" #telefono="ngModel" required />
+            @if (telefono.invalid && telefono.touched) {
+              <span class="field-error">{{ telefono.errors?.['required'] ? 'Indica un teléfono.' : 'Debe tener 9 dígitos: +56 9 1234 5678.' }}</span>
+            }
+          </div>
+          <div class="form-field">
+            <label for="email">Correo *</label>
+            <input id="email" name="email" appCorreo [(ngModel)]="formulario.email" #email="ngModel" required />
+            @if (email.invalid && email.touched) {
+              <span class="field-error">{{ email.errors?.['required'] ? 'Indica un correo.' : 'Correo inválido (ej. ventas@empresa.cl).' }}</span>
+            }
+          </div>
+          <div class="full">
+            <app-direccion-campos [direccion]="formulario.direccion" />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="guardando || form.invalid">
+            {{ guardando ? 'Guardando...' : (idEditando === null ? 'Crear proveedor' : 'Guardar cambios') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
