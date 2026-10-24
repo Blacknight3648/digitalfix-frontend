@@ -6,8 +6,14 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="DigitalFix - Plataforma de gestión y servicios en línea">
-  <link rel="icon" type="image/svg+xml" href="digitalfix.svg">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <!-- Logo en PNG liviano (8 kB): digitalfix.svg trae PNGs de 2000 px incrustados y pesa 146 kB -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="preload" as="image" href="digitalfix-128.png">
+  <!-- Conexión temprana a Google Fonts: la fuente de íconos se pide antes de que el CSS la necesite -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- display=block: mientras llega la fuente no se ve el nombre del ícono como texto ("refresh") -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons&display=block">
 
   <!-- Pantalla de carga al iniciar sesión (ver src/app/config/pantalla-carga.ts).
        Estilos inline para que esté lista antes de que cargue la hoja de estilos. -->
@@ -85,7 +91,7 @@
 <body>
   <div id="df-carga" role="status" aria-live="polite">
     <div class="df-marca">
-      <img src="digitalfix.svg" alt="" onerror="this.style.display='none'">
+      <img src="digitalfix-128.png" alt="" width="34" height="34" onerror="this.style.display='none'">
       <div>Digital<span>Fix</span></div>
     </div>
     <div class="df-spinner" aria-hidden="true"></div>

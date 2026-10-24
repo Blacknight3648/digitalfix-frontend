@@ -1,6 +1,6 @@
 // src/main.ts
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideRouter } from '@angular/router';
+import { PreloadAllModules, provideRouter, withPreloading } from '@angular/router';
 import {
   HTTP_INTERCEPTORS,
   provideHttpClient,
@@ -37,7 +37,9 @@ prepareAuth(msalInstance)
   .then((redirectError) =>
     bootstrapApplication(App, {
       providers: [
-        provideRouter(routes),
+        // Las pantallas se cargan en diferido (app.routes.ts); apenas termina la primera,
+        // el resto se descarga en segundo plano para que navegar no espere la red.
+        provideRouter(routes, withPreloading(PreloadAllModules)),
         provideHttpClient(withInterceptorsFromDi()),
 
         // La misma instancia de MSAL que ya procesó el regreso desde Microsoft
