@@ -7,15 +7,17 @@
     display: block;
     width: 100%;
     min-height: 100vh;
+    min-height: 100dvh;
 }
 
 .login-page {
     position: relative;
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 32px 20px;
+    padding: clamp(12px, 3vw, 32px) clamp(10px, 2.5vw, 20px);
     background: var(--gris-fondo, #d9d9d9);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     overflow: hidden;
@@ -33,7 +35,6 @@
     grid-template-columns: 1.08fr 1fr;
     width: 100%;
     max-width: 960px;
-    min-height: 580px;
     background: var(--blanco, #ffffff);
     border-radius: 20px;
     overflow: hidden;
@@ -103,14 +104,16 @@
 .tech-security-illustration {
     width: 100%;
     height: auto;
-    max-height: 280px;
+    max-height: clamp(150px, 36vh, 280px);
     display: block;
     filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.05));
     transition: transform 0.3s ease;
 }
 
-.tech-security-illustration:hover {
-    transform: scale(1.015);
+@media (hover: hover) {
+    .tech-security-illustration:hover {
+        transform: scale(1.015);
+    }
 }
 
 .brand-footer {
@@ -134,7 +137,7 @@
     position: relative;
     background: linear-gradient(160deg, #141922 0%, var(--negro, #000000) 100%);
     color: var(--blanco, #ffffff);
-    padding: 42px 42px;
+    padding: clamp(26px, 4vw, 42px);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -167,7 +170,7 @@
 
 .welcome-title {
     margin: 0 0 6px;
-    font-size: 32px;
+    font-size: clamp(24px, 1.6vw + 16px, 32px);
     font-weight: 700;
     letter-spacing: -0.5px;
     line-height: 1.15;
@@ -311,9 +314,10 @@
 /* Opciones: Recordarme & Olvidé contraseña */
 .form-options {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 8px 12px;
     font-size: 12.5px;
 }
 
@@ -368,7 +372,7 @@
 .link-text-button {
     background: none;
     border: none;
-    padding: 0;
+    padding: 4px 0;
     color: rgba(255, 255, 255, 0.85);
     font-family: inherit;
     font-size: 12.5px;
@@ -497,34 +501,82 @@
 
 .help-mini-icon { font-size: 16px; }
 
-/* Responsive */
+/* =========================================================
+   RESPONSIVE
+   Ancho: 2 columnas → 1 columna (≤900) → sin ilustración (≤600) → móvil (≤480).
+   Alto: ventanas bajas (notebooks con zoom, teléfonos en horizontal) compactan
+   el espaciado para que el formulario completo quepa sin cortar la tarjeta.
+   ========================================================= */
+
+/* Ventanas altas: la tarjeta conserva su proporción original */
+@media (min-height: 760px) and (min-width: 901px) {
+    .login-card-container { min-height: 580px; }
+}
+
+/* Escritorio con poca altura (ej. 1366×600): todo más compacto en vertical */
+@media (max-height: 720px) and (min-width: 901px) {
+    .brand-illustration-side { padding: 24px 32px 20px; }
+    .illustration-wrapper { margin: 8px 0; }
+    .form-side { padding-top: 26px; padding-bottom: 22px; }
+    .form-header { margin-bottom: 16px; }
+    .login-form { gap: 12px; }
+    .pill-input-container { height: 44px; }
+    .btn-cta-primary, .btn-microsoft-sso { height: 44px; }
+    .action-buttons-group { gap: 9px; margin-top: 2px; }
+    .form-footer { margin-top: 12px; }
+    .brand-tagline { font-size: 12.5px; }
+}
+
+/* Una columna: la marca queda como cabecera y el formulario debajo */
 @media (max-width: 900px) {
     .login-card-container {
         grid-template-columns: 1fr;
         max-width: 460px;
-        min-height: auto;
         border-radius: 18px;
     }
     .brand-illustration-side {
-        padding: 24px 26px 18px;
+        padding: 22px 26px 16px;
         border-right: none;
         border-bottom: 1px solid var(--borde, #e6e6e6);
     }
-    .illustration-wrapper { margin: 8px 0; }
-    .tech-security-illustration { max-height: 165px; }
+    .illustration-wrapper { margin: 8px 0 0; }
+    .tech-security-illustration { max-height: 150px; }
     .brand-tagline { display: none; }
-    .form-side { padding: 34px 28px; }
-    .welcome-title { font-size: 28px; }
+}
+
+/* Teléfonos: sin ilustración, para que el formulario quede a la vista sin hacer scroll */
+@media (max-width: 600px) {
+    .illustration-wrapper { display: none; }
+    .brand-illustration-side { padding: 16px 20px; }
+    .brand-header { justify-content: center; }
 }
 
 @media (max-width: 480px) {
-    .login-page { padding: 14px 10px; }
     .login-card-container { border-radius: 16px; }
-    .brand-illustration-side { padding: 18px 18px 14px; }
-    .tech-security-illustration { max-height: 130px; }
-    .form-side { padding: 26px 18px; }
-    .welcome-title { font-size: 24px; }
-    .pill-input-container { height: 46px; }
-    .btn-cta-primary, .btn-microsoft-sso { height: 46px; font-size: 13.5px; }
-    .form-options { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .form-side { padding: 24px 18px 20px; }
+    .form-header { margin-bottom: 18px; }
+    .welcome-subtitle { font-size: 13px; }
+    .pill-input-container { height: 46px; padding: 0 12px 0 14px; }
+    .field-icon { margin-right: 10px; }
+    /* 16px evita el zoom automático de iOS al enfocar un campo */
+    .pill-input-container input { font-size: 16px; }
+    .btn-cta-primary, .btn-microsoft-sso { height: 46px; font-size: 14px; }
+}
+
+/* Teléfonos en horizontal y ventanas muy bajas: se oculta la ilustración */
+@media (max-height: 520px) and (max-width: 900px) {
+    .illustration-wrapper { display: none; }
+    .brand-illustration-side { padding: 12px 20px; }
+    .form-side { padding-top: 20px; padding-bottom: 16px; }
+    .form-header { margin-bottom: 12px; }
+    .login-form { gap: 10px; }
+}
+
+/* Quien pide menos movimiento en su sistema no ve animaciones */
+@media (prefers-reduced-motion: reduce) {
+    .login-card-container, .alert-box { animation: none; }
+    .tech-security-illustration, .pill-input-container,
+    .btn-cta-primary, .btn-microsoft-sso { transition: none; }
+    .btn-cta-primary:hover:not(:disabled), .btn-microsoft-sso:hover:not(:disabled),
+    .pill-input-container:focus-within { transform: none; }
 }
