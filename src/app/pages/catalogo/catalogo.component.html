@@ -1,0 +1,329 @@
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2>Catálogo técnico · Repuestos</h2>
+      <p>
+        {{ repuestos.length }} repuestos ·
+        @if (cantidadBajoStock) {
+          <strong class="text-alerta">{{ cantidadBajoStock }} en o bajo su stock mínimo</strong>
+        } @else {
+          stock sobre el mínimo en todos
+        }
+        · el stock se descuenta al asignar una orden
+      </p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-refresh" type="button" (click)="cargar()" [disabled]="cargando" title="Actualizar stock">
+        <span class="material-icons" [class.rotating]="cargando">refresh</span>
+      </button>
+      @if (puedeAdministrar) {
+        <button class="btn-primary" type="button" (click)="abrirCreacion()">+ Nuevo repuesto</button>
+      }
+    </div>
+  </div>
+
+  @if (mensajeExito) {
+    <div class="alert alert-success">
+      <span class="material-icons">check_circle</span>
+      <span>{{ mensajeExito }}</span>
+      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
+    </div>
+  }
+  @if (mensajeError && !modal) {
+    <div class="alert alert-danger">
+      <span class="material-icons">error_outline</span>
+      <span>{{ mensajeError }}</span>
+      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
+    </div>
+  }
+
+  <div class="filters">
+    <div class="search-input-wrapper">
+      <span class="material-icons search-icon">search</span>
+      <input type="search" placeholder="Buscar por código, nombre o descripción..." [(ngModel)]="terminoBusqueda" />
+    </div>
+    <label class="checkbox-field">
+      <input type="checkbox" [(ngModel)]="soloBajoStock" />
+      Solo por reponer
+    </label>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Repuesto</th>
+          <th>Precio unitario</th>
+          <th>Stock</th>
+          <th>Estado</th>
+          <th class="actions-col">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando) {
+          <tr>
+            <td colspan="6" class="loading-cell">
+              <div class="spinner-small"></div>
+              <span>Consultando el stock en digitalfix-ms-catalog...</span>
+            </td>
+          </tr>
+        } @else {
+          @for (repuesto of repuestosFiltrados; track repuesto.idRepuesto) {
+            <tr>
+              <td class="id-cell">{{ repuesto.codigo }}</td>
+              <td>
+                <div class="main-cell">
+                  <strong>{{ repuesto.nombre }}</strong>
+                  @if (repuesto.descripcion) {
+                    <span class="sub-text">{{ repuesto.descripcion }}</span>
+                  }
+                </div>
+              </td>
+              <td class="money">${{ repuesto.precioUnitario | number:'1.0-0' }} <span class="sub-text">/ {{ etiquetaUnidad[repuesto.unidadMedida] | lowercase }}</span></td>
+              <td>
+                <div class="main-cell">
+                  <strong class="stock-num">{{ repuesto.stockDisponible | number }}</strong>
+                  <span class="sub-text">mínimo {{ repuesto.stockMinimo | number }}</span>
+                </div>
+              </td>
+              <td>
+                @if (!repuesto.activo) {
+                  <span class="badge badge-inactivo">Inactivo</span>
+                } @else if (repuesto.bajoStockMinimo) {
+                  <span class="badge badge-alerta">Reponer</span>
+                } @else {
+                  <span class="badge badge-activo">Disponible</span>
+                }
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn-secondary" type="button" (click)="abrirHistorial(repuesto)">Historial</button>
+                  @if (puedeAdministrar) {
+                    <button class="btn-secondary" type="button" (click)="abrirEntrada(repuesto)">Reponer</button>
+                    <button class="btn-secondary" type="button" (click)="abrirEdicion(repuesto)">Editar</button>
+                    <button class="btn-ghost" type="button" (click)="eliminar(repuesto)">Eliminar</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-hint">
+                <span class="material-icons empty-icon">inventory_2</span>
+                <p>{{ repuestos.length ? 'No hay repuestos que coincidan con los filtros.' : 'Aún no hay repuestos en el catálogo.' }}</p>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Crear / editar repuesto (solo Admin) -->
+@if (modal === 'repuesto') {
+  <div class="overlay" (click)="cerrarModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ seleccionado === null ? 'Nuevo repuesto' : 'Editar ' + seleccionado.codigo }}</h3>
+        <button type="button" class="material-icons close-btn" (click)="cerrarModal()">close</button>
+      </div>
+      <p class="modal-sub">Los campos con * son obligatorios.</p>
+
+      @if (mensajeError) {
+        <div class="alert alert-danger">
+          <span class="material-icons">error_outline</span>
+          <span>{{ mensajeError }}</span>
+        </div>
+      }
+
+      <form class="modal-body-form" #form="ngForm" (ngSubmit)="guardar()">
+        <div class="form-grid">
+          <div class="form-field full">
+            <label for="nombre">Nombre *</label>
+            <input id="nombre" name="nombre" appCapitalizar="primera" [(ngModel)]="formulario.nombre" #nombre="ngModel"
+              maxlength="100" placeholder="Interruptor termomagnético 2x16A" required />
+            @if (nombre.invalid && nombre.touched) {
+              <span class="field-error">Indica el nombre del repuesto.</span>
+            }
+          </div>
+          <div class="form-field full">
+            <label for="descripcion">Descripción</label>
+            <textarea id="descripcion" name="descripcion" rows="2" maxlength="255" [(ngModel)]="formulario.descripcion"
+              placeholder="Curva, capacidad, presentación..."></textarea>
+          </div>
+          <div class="form-field">
+            <label for="unidad">Unidad de medida *</label>
+            <select id="unidad" name="unidadMedida" [(ngModel)]="formulario.unidadMedida" required>
+              @for (unidad of unidades; track unidad) {
+                <option [ngValue]="unidad">{{ etiquetaUnidad[unidad] }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="precio">Precio unitario *</label>
+            <div class="input-prefix">
+              <span>$</span>
+              <input id="precio" name="precioUnitario" appPesos [(ngModel)]="formulario.precioUnitario" #precio="ngModel" required />
+            </div>
+            @if (precio.invalid && precio.touched) {
+              <span class="field-error">Indica el precio en pesos.</span>
+            }
+          </div>
+          <div class="form-field">
+            <label for="stockMinimo">Stock mínimo *</label>
+            <input id="stockMinimo" name="stockMinimo" type="number" min="0" max="9999999" step="1"
+              [(ngModel)]="formulario.stockMinimo" #stockMinimo="ngModel" required />
+            @if (stockMinimo.invalid && stockMinimo.touched) {
+              <span class="field-error">Indica un entero de 0 o más.</span>
+            } @else {
+              <span class="form-hint">Desde este nivel el repuesto aparece como "Reponer".</span>
+            }
+          </div>
+          @if (seleccionado === null) {
+            <div class="form-field">
+              <label for="stockInicial">Stock inicial</label>
+              <input id="stockInicial" name="stockInicial" type="number" min="0" max="9999999" step="1"
+                [(ngModel)]="formulario.stockInicial" />
+              <span class="form-hint">Queda en el historial como entrada "Stock inicial".</span>
+            </div>
+          } @else {
+            <div class="form-field">
+              <label>Stock actual</label>
+              <input [value]="seleccionado.stockDisponible" disabled />
+              <span class="form-hint">Cambia con "Reponer" o al asignar órdenes.</span>
+            </div>
+            <label class="checkbox-field full">
+              <input type="checkbox" name="activo" [(ngModel)]="formulario.activo" />
+              Activo (se puede agregar a órdenes de trabajo)
+            </label>
+          }
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="guardando || form.invalid">
+            {{ guardando ? 'Guardando...' : (seleccionado === null ? 'Crear repuesto' : 'Guardar cambios') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Reposición de stock (solo Admin) -->
+@if (modal === 'entrada' && seleccionado) {
+  <div class="overlay" (click)="cerrarModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Reponer {{ seleccionado.codigo }}</h3>
+        <button type="button" class="material-icons close-btn" (click)="cerrarModal()">close</button>
+      </div>
+      <p class="modal-sub">{{ seleccionado.nombre }} · stock actual {{ seleccionado.stockDisponible | number }} (mínimo {{ seleccionado.stockMinimo | number }})</p>
+
+      @if (mensajeError) {
+        <div class="alert alert-danger">
+          <span class="material-icons">error_outline</span>
+          <span>{{ mensajeError }}</span>
+        </div>
+      }
+
+      <form class="modal-body-form" #formEntrada="ngForm" (ngSubmit)="registrarEntrada()">
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="cantidad">Cantidad *</label>
+            <input id="cantidad" name="cantidad" type="number" min="1" max="9999999" step="1"
+              [(ngModel)]="entrada.cantidad" #cantidad="ngModel" required />
+            @if (cantidad.invalid && cantidad.touched) {
+              <span class="field-error">Indica un entero mayor a cero.</span>
+            }
+          </div>
+          <div class="form-field">
+            <label for="referencia">Referencia *</label>
+            <input id="referencia" name="referencia" maxlength="60" [(ngModel)]="entrada.referencia" #referencia="ngModel"
+              placeholder="Guía 4521 / Factura 889" required />
+            @if (referencia.invalid && referencia.touched) {
+              <span class="field-error">Indica la guía o factura del proveedor.</span>
+            }
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="guardando || formEntrada.invalid">
+            {{ guardando ? 'Registrando...' : 'Registrar entrada' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Historial de movimientos de stock -->
+@if (modal === 'historial' && seleccionado) {
+  <div class="overlay" (click)="cerrarModal()">
+    <div class="modal modal-wide" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Historial de {{ seleccionado.codigo }}</h3>
+        <button type="button" class="material-icons close-btn" (click)="cerrarModal()">close</button>
+      </div>
+      <p class="modal-sub">{{ seleccionado.nombre }} · stock actual {{ seleccionado.stockDisponible | number }}</p>
+
+      @if (mensajeError) {
+        <div class="alert alert-danger">
+          <span class="material-icons">error_outline</span>
+          <span>{{ mensajeError }}</span>
+        </div>
+      }
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Movimiento</th>
+              <th>Cantidad</th>
+              <th>Stock resultante</th>
+              <th>Referencia</th>
+              <th>Usuario</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (cargandoMovimientos) {
+              <tr>
+                <td colspan="6" class="loading-cell">
+                  <div class="spinner-small"></div>
+                  <span>Cargando historial...</span>
+                </td>
+              </tr>
+            } @else {
+              @for (mov of movimientos; track mov.idMovimiento) {
+                <tr>
+                  <td>{{ mov.fechaMovimiento | date:'d MMM y, HH:mm' }}</td>
+                  <td>
+                    <span class="badge" [class.badge-alerta]="mov.tipo === 'SALIDA'" [class.badge-activo]="mov.tipo !== 'SALIDA'">
+                      {{ etiquetaMovimiento[mov.tipo] }}
+                    </span>
+                  </td>
+                  <td class="stock-num">{{ mov.tipo === 'SALIDA' ? '−' : '+' }}{{ mov.cantidad | number }}</td>
+                  <td class="stock-num">{{ mov.stockResultante | number }}</td>
+                  <td class="id-cell">{{ mov.referencia }}</td>
+                  <td class="sub-text">{{ mov.usuario || '—' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="empty-hint"><p>Sin movimientos registrados.</p></td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="cerrarModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { AppRole, APP_ROLE_LABEL, hasRoleAccess } from '../../model/user.model';
 import {
@@ -12,11 +13,17 @@ import {
     CLASE_CSS_ESTADO_ORDEN,
     FLUJO_ESTADOS_ORDEN,
     ETIQUETA_ACCION_SIGUIENTE_ORDEN,
+    CuadrillaDisponible,
+    RepuestoOrdenTrabajo,
 } from '../../model/orden-trabajo.model';
 import { ServicioOrdenesTrabajo } from '../../services/servicio-ordenes-trabajo.service';
 import { ServicioCatalogo } from '../../model/catalogo-servicio.model';
 import { mensajeDeError } from '../../model/directorio.model';
 import { ServicioCatalogoServicios } from '../../services/servicio-catalogo.service';
+import { Repuesto } from '../../model/repuesto.model';
+import { Proveedor } from '../../model/directorio.model';
+import { ServicioRepuestos } from '../../services/servicio-repuestos.service';
+import { ServicioProveedores } from '../../services/servicio-proveedores.service';
 
 @Component({
     standalone: true,
@@ -29,6 +36,8 @@ export class HomeComponent implements OnInit {
     private readonly authService = inject(AuthService);
     private readonly servicioOrdenes = inject(ServicioOrdenesTrabajo);
     private readonly catalogo = inject(ServicioCatalogoServicios);
+    private readonly servicioRepuestos = inject(ServicioRepuestos);
+    private readonly servicioProveedores = inject(ServicioProveedores);
 
     readonly estadosDisponibles: EstadoOrden[] = [
         'CREADA',
@@ -69,6 +78,21 @@ export class HomeComponent implements OnInit {
         idServicio: null as number | null,
         observaciones: '',
     };
+
+    // Operación de la orden en el modal de detalle (Supervisor / Admin): asignar cuadrilla y
+    // registrar repuestos. El stock vive en ms-catalog y se descuenta al asignar la orden.
+    repuestosCatalogo: Repuesto[] = [];
+    proveedoresProductos: Proveedor[] = [];
+    cuadrillasDisponibles: CuadrillaDisponible[] = [];
+    idCuadrillaElegida: number | null = null;
+    formularioRepuesto = {
+        idRepuesto: null as number | null,
+        idProveedor: null as number | null,
+        cantidad: 1 as number | null,
+    };
+    operandoDetalle = false;
+    mensajeErrorDetalle = '';
+    mensajeExitoDetalle = '';
 
     constructor() {
         this.authService.syncFromActiveAccount();
@@ -206,6 +230,12 @@ export class HomeComponent implements OnInit {
             return;
         }
 
+        // Asignar exige técnico o cuadrilla (regla del backend): se elige en el detalle de la orden.
+        if (orden.estado === 'CREADA') {
+            this.abrirDetalle(orden);
+            return;
+        }
+
         const nuevoEstado = FLUJO_ESTADOS_ORDEN[indice + 1];
         this.procesandoAccion = true;
         this.limpiarMensajes();
@@ -219,8 +249,7 @@ export class HomeComponent implements OnInit {
                 this.procesandoAccion = false;
             },
             error: (err) => {
-                const mensajeBackend = err?.error?.mensaje ?? err?.error?.error ?? 'Error al cambiar estado.';
-                this.mensajeError = `No se pudo cambiar el estado: ${mensajeBackend}`;
+                this.mensajeError = mensajeDeError(err, 'cambiar el estado de la orden');
                 this.procesandoAccion = false;
             },
         });
@@ -302,6 +331,11 @@ export class HomeComponent implements OnInit {
     // Modal de Detalle
     abrirDetalle(orden: OrdenTrabajo): void {
         this.ordenSeleccionada = orden;
+        this.mensajeErrorDetalle = '';
+        this.mensajeExitoDetalle = '';
+        if (this.puedeOperar()) {
+            this.cargarDatosOperacion(orden);
+        }
         // Intenta refrescar el detalle completo desde el servidor
         this.servicioOrdenes.buscarPorId(orden.idOrdenTrabajo).subscribe({
             next: (detalle) => {
@@ -315,6 +349,131 @@ export class HomeComponent implements OnInit {
 
     cerrarModalDetalle(): void {
         this.ordenSeleccionada = null;
+    }
+
+    // ---------------------------------------------------------------------
+    // Operación de la orden: cuadrilla y repuestos (stock en ms-catalog)
+    // ---------------------------------------------------------------------
+
+    esEditable(orden: OrdenTrabajo): boolean {
+        return orden.estado !== 'CERRADA' && orden.estado !== 'CANCELADA';
+    }
+
+    // Desde ASIGNADA los repuestos de la orden ya están descontados del stock.
+    stockComprometido(orden: OrdenTrabajo): boolean {
+        return orden.estado !== 'CREADA' && orden.estado !== 'CANCELADA';
+    }
+
+    // La orden guarda solo el ID del repuesto: el código y el nombre salen del catálogo.
+    nombreRepuesto(rep: RepuestoOrdenTrabajo): string {
+        const repuesto = this.repuestosCatalogo.find((r) => r.idRepuesto === rep.idRepuesto);
+        return repuesto ? `${repuesto.codigo} · ${repuesto.nombre}` : `Repuesto #${rep.idRepuesto}`;
+    }
+
+    nombreProveedor(idProveedor: number): string {
+        return this.proveedoresProductos.find((p) => p.idProveedor === idProveedor)?.razonSocial ?? `Proveedor #${idProveedor}`;
+    }
+
+    get repuestoElegido(): Repuesto | undefined {
+        return this.repuestosCatalogo.find((r) => r.idRepuesto === this.formularioRepuesto.idRepuesto);
+    }
+
+    private cargarDatosOperacion(orden: OrdenTrabajo): void {
+        // Stock siempre fresco: otra orden pudo haberlo consumido.
+        this.servicioRepuestos.listar(true).subscribe({
+            next: (repuestos) => (this.repuestosCatalogo = repuestos),
+            error: (err) => console.warn('Error al cargar los repuestos del catálogo:', err),
+        });
+        if (!this.proveedoresProductos.length) {
+            this.servicioProveedores.listarPorTipo('PRODUCTOS').subscribe({
+                next: (proveedores) => {
+                    this.proveedoresProductos = proveedores;
+                    this.formularioRepuesto.idProveedor ??= proveedores[0]?.idProveedor ?? null;
+                },
+                error: (err) => console.warn('Error al cargar proveedores de productos:', err),
+            });
+        }
+        this.cuadrillasDisponibles = [];
+        this.idCuadrillaElegida = null;
+        if (orden.estado === 'CREADA') {
+            this.servicioOrdenes.listarCuadrillasDisponibles().subscribe({
+                next: (cuadrillas) => {
+                    this.cuadrillasDisponibles = cuadrillas;
+                    this.idCuadrillaElegida = cuadrillas[0]?.idCuadrilla ?? null;
+                },
+                error: (err) => console.warn('Error al cargar cuadrillas:', err),
+            });
+        }
+    }
+
+    asignarCuadrilla(orden: OrdenTrabajo): void {
+        if (!this.idCuadrillaElegida) {
+            return;
+        }
+        const conRepuestos = orden.repuestos.length > 0;
+        this.ejecutarEnDetalle(
+            this.servicioOrdenes.asignarCuadrilla(orden.idOrdenTrabajo, this.idCuadrillaElegida),
+            'asignar la cuadrilla',
+            (actualizada) => `Orden asignada a ${actualizada.cuadrilla?.nombre ?? 'la cuadrilla'}.`
+                + (conRepuestos ? ' Se descontó el stock de sus repuestos.' : ''),
+        );
+    }
+
+    agregarRepuesto(orden: OrdenTrabajo): void {
+        const { idRepuesto, idProveedor, cantidad } = this.formularioRepuesto;
+        if (!idRepuesto || !idProveedor || !cantidad || cantidad < 1) {
+            this.mensajeErrorDetalle = 'Elige el repuesto, el proveedor y una cantidad mayor a cero.';
+            return;
+        }
+        const codigo = this.repuestoElegido?.codigo ?? `#${idRepuesto}`;
+        const descuentaAhora = this.stockComprometido(orden);
+        this.ejecutarEnDetalle(
+            this.servicioOrdenes.agregarRepuesto(orden.idOrdenTrabajo, { idRepuesto, idProveedor, cantidad }),
+            'agregar el repuesto',
+            () => descuentaAhora
+                ? `Se agregaron ${cantidad} de ${codigo} y se descontaron del stock.`
+                : `Se agregaron ${cantidad} de ${codigo}; el stock se descuenta al asignar la orden.`,
+            () => (this.formularioRepuesto = { ...this.formularioRepuesto, idRepuesto: null, cantidad: 1 }),
+        );
+    }
+
+    quitarRepuesto(orden: OrdenTrabajo, rep: RepuestoOrdenTrabajo): void {
+        const aviso = this.stockComprometido(orden) ? ' Las unidades vuelven al stock.' : '';
+        if (!confirm(`¿Quitar ${this.nombreRepuesto(rep)} de la orden #${orden.idOrdenTrabajo}?${aviso}`)) {
+            return;
+        }
+        this.ejecutarEnDetalle(
+            this.servicioOrdenes.quitarRepuesto(orden.idOrdenTrabajo, rep.idDetalle),
+            'quitar el repuesto',
+            () => `Repuesto quitado.${aviso}`,
+        );
+    }
+
+    // Ejecuta una operación sobre la orden abierta y refleja el resultado en el detalle y en la
+    // tabla. Los errores (p. ej. 409 "Stock insuficiente para REP-0006...") se muestran en el modal.
+    private ejecutarEnDetalle(
+        solicitud: Observable<OrdenTrabajo>,
+        accion: string,
+        mensajeExito: (actualizada: OrdenTrabajo) => string,
+        alTerminar?: () => void,
+    ): void {
+        this.operandoDetalle = true;
+        this.mensajeErrorDetalle = '';
+        this.mensajeExitoDetalle = '';
+        solicitud.subscribe({
+            next: (actualizada) => {
+                this.operandoDetalle = false;
+                this.ordenSeleccionada = actualizada;
+                this.ordenes = this.ordenes.map((o) => o.idOrdenTrabajo === actualizada.idOrdenTrabajo ? actualizada : o);
+                this.mensajeExitoDetalle = mensajeExito(actualizada);
+                alTerminar?.();
+                this.cargarDatosOperacion(actualizada);
+            },
+            error: (err) => {
+                this.operandoDetalle = false;
+                this.mensajeErrorDetalle = mensajeDeError(err, accion);
+            },
+        });
     }
 
     limpiarMensajes(): void {

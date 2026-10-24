@@ -11,6 +11,8 @@ import {
     AsignarTecnicoPeticion,
     EstadoOrden,
     ClienteResumen,
+    AgregarRepuestoPeticion,
+    CuadrillaDisponible,
 } from '../model/orden-trabajo.model';
 import { IServicioOrdenesTrabajo } from './servicio-ordenes-trabajo.interface';
 
@@ -109,6 +111,7 @@ export class ServicioOrdenesTrabajo implements IServicioOrdenesTrabajo {
     private readonly baseUrl = environment.bffUrl;
     private readonly rutaOrdenes = `${this.baseUrl}/api/ordenes-trabajo`;
     private readonly rutaClientes = `${this.baseUrl}/api/clientes`;
+    private readonly rutaCuadrillas = `${this.baseUrl}/api/cuadrillas`;
 
     /**
      * Consulta el listado de órdenes de trabajo en el microservicio.
@@ -166,6 +169,11 @@ export class ServicioOrdenesTrabajo implements IServicioOrdenesTrabajo {
         return this.http.post<OrdenTrabajo>(this.rutaOrdenes, peticion).pipe(
             map((orden) => this.normalizarOrden(orden)),
             catchError((err) => {
+                // Solo sin conexión (status 0) se usa el respaldo local; un 400/409 del backend
+                // es una respuesta real y debe llegar a la pantalla.
+                if (!this.sinConexion(err)) {
+                    return throwError(() => err);
+                }
                 console.warn(`[ServicioOrdenesTrabajo] Error al conectar con el backend para crear orden. Registrando en memoria local:`, err);
                 // Respaldo optimista en memoria
                 const nuevaOrden: OrdenTrabajo = {
@@ -219,6 +227,10 @@ export class ServicioOrdenesTrabajo implements IServicioOrdenesTrabajo {
         return this.http.put<OrdenTrabajo>(`${this.rutaOrdenes}/${id}/estado`, body).pipe(
             map((orden) => this.normalizarOrden(orden)),
             catchError((err) => {
+                // Un 409 (p. ej. "Stock insuficiente") no debe enmascararse como avance local.
+                if (!this.sinConexion(err)) {
+                    return throwError(() => err);
+                }
                 console.warn(`[ServicioOrdenesTrabajo] Transicionando estado localmente para orden #${id}:`, err);
                 const encontrada = ORDENES_DEMO_RESPALDO.find((o) => o.idOrdenTrabajo === id);
                 if (encontrada) {
@@ -257,6 +269,31 @@ export class ServicioOrdenesTrabajo implements IServicioOrdenesTrabajo {
     }
 
     /**
+     * Agrega un repuesto del catálogo a la orden (descuenta stock si la orden ya está asignada).
+     */
+    agregarRepuesto(id: number, peticion: AgregarRepuestoPeticion): Observable<OrdenTrabajo> {
+        return this.http.post<OrdenTrabajo>(`${this.rutaOrdenes}/${id}/repuestos`, peticion).pipe(
+            map((orden) => this.normalizarOrden(orden))
+        );
+    }
+
+    /**
+     * Quita un repuesto de la orden (devuelve el stock si la orden ya estaba asignada).
+     */
+    quitarRepuesto(id: number, idDetalle: number): Observable<OrdenTrabajo> {
+        return this.http.delete<OrdenTrabajo>(`${this.rutaOrdenes}/${id}/repuestos/${idDetalle}`).pipe(
+            map((orden) => this.normalizarOrden(orden))
+        );
+    }
+
+    /**
+     * Cuadrillas en estado DISPONIBLE (las EN_TERRENO ya están asignadas a otra orden).
+     */
+    listarCuadrillasDisponibles(): Observable<CuadrillaDisponible[]> {
+        return this.http.get<CuadrillaDisponible[]>(this.rutaCuadrillas, { params: { estado: 'DISPONIBLE' } });
+    }
+
+    /**
      * Elimina una orden de trabajo (solo si está en CREADA).
      */
     eliminar(id: number): Observable<void> {
@@ -290,6 +327,12 @@ export class ServicioOrdenesTrabajo implements IServicioOrdenesTrabajo {
                 ]);
             })
         );
+    }
+
+    // status 0: el navegador no obtuvo respuesta (BFF caído, CORS, red). Cualquier otro status es
+    // una respuesta real del backend.
+    private sinConexion(err: any): boolean {
+        return err?.status === 0;
     }
 
     /**

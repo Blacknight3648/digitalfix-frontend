@@ -6,6 +6,8 @@ import {
     ActualizarObservacionesPeticion,
     EstadoOrden,
     ClienteResumen,
+    AgregarRepuestoPeticion,
+    CuadrillaDisponible,
 } from '../model/orden-trabajo.model';
 
 /**
@@ -47,6 +49,21 @@ export interface IServicioOrdenesTrabajo {
      * Asigna un técnico especialista al servicio de la orden.
      */
     asignarTecnico(id: number, idDetalleServicio: number, idTecnico: number): Observable<OrdenTrabajo>;
+
+    /**
+     * Agrega un repuesto del catálogo a la orden; si ya está asignada, descuenta su stock.
+     */
+    agregarRepuesto(id: number, peticion: AgregarRepuestoPeticion): Observable<OrdenTrabajo>;
+
+    /**
+     * Quita un repuesto de la orden; si ya estaba asignada, devuelve su stock.
+     */
+    quitarRepuesto(id: number, idDetalle: number): Observable<OrdenTrabajo>;
+
+    /**
+     * Cuadrillas disponibles para asignar una orden en terreno.
+     */
+    listarCuadrillasDisponibles(): Observable<CuadrillaDisponible[]>;
 
     /**
      * Elimina una orden de trabajo (solo permitido en estado CREADA).

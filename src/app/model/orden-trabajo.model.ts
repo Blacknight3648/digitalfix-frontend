@@ -143,6 +143,22 @@ export interface AsignarTecnicoPeticion {
     idTecnico: number;
 }
 
+// POST /api/ordenes-trabajo/{id}/repuestos. El repuesto viene del catálogo (ms-catalog) y el
+// proveedor debe ser de PRODUCTOS. Si la orden ya está asignada, el stock se descuenta al tiro.
+export interface AgregarRepuestoPeticion {
+    idRepuesto: number;
+    idProveedor: number;
+    cantidad: number;
+}
+
+// Cuadrilla de GET /api/cuadrillas (CuadrillaResponse), para elegir a quién asignar la orden.
+export interface CuadrillaDisponible {
+    idCuadrilla: number;
+    nombre: string;
+    estado: EstadoCuadrilla | string;
+    cantidadMiembros: number;
+}
+
 export interface FiltroOrdenesTrabajo {
     estado?: EstadoOrden | '';
     idCliente?: number;
