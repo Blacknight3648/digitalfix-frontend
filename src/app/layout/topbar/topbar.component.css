@@ -1,0 +1,229 @@
+.topbar {
+  background: var(--blanco);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 68px;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.topbar-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.breadcrumb {
+  font-size: 13px;
+  color: var(--texto-secundario);
+  white-space: nowrap;
+}
+
+.breadcrumb-sep {
+  font-size: 16px;
+  color: var(--texto-tenue);
+}
+
+.current-page {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texto);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.role-select {
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--borde);
+  background: var(--blanco);
+  color: var(--texto);
+}
+
+.icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--texto-secundario);
+  cursor: pointer;
+}
+
+.icon-btn .material-icons {
+  font-size: 22px;
+}
+
+.icon-btn:hover {
+  background: var(--gris-suave);
+  color: var(--texto);
+}
+
+.divider {
+  width: 1px;
+  height: 32px;
+  background: var(--borde);
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.user-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.user-name {
+  max-width: 220px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texto);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-role {
+  font-size: 12px;
+  color: var(--texto-secundario);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--primario-suave);
+  color: var(--primario);
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.btn-logout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--blanco);
+  color: var(--texto-secundario);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-logout .material-icons {
+  font-size: 18px;
+}
+
+.btn-logout:hover {
+  border-color: var(--cancelada-fg);
+  color: var(--cancelada-fg);
+}
+
+/* Solo existe cuando el menú es un panel deslizable */
+.btn-menu {
+  display: none;
+  margin-right: 4px;
+}
+
+/* Riel de íconos: el topbar acompaña el padding del contenido */
+@media (max-width: 1199px) {
+  .topbar {
+    padding: 0 clamp(16px, 2.6vw, 32px);
+  }
+}
+
+@media (max-width: 880px) {
+  .btn-menu {
+    display: grid;
+  }
+
+  .user-text,
+  .logout-label {
+    display: none;
+  }
+}
+
+/* Teléfonos: una sola fila con ☰, título, avatar y salir. Los íconos sin función
+   todavía (notificaciones, soporte) y la miga "DigitalFix ›" se ocultan; el
+   selector "Ver como…" del Superadmin baja a una segunda fila a lo ancho. */
+@media (max-width: 640px) {
+  .topbar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 56px;
+    padding: 8px 12px;
+    gap: 8px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+
+  .topbar-title {
+    flex: 1;
+  }
+
+  .breadcrumb,
+  .breadcrumb-sep,
+  .icons,
+  .divider {
+    display: none;
+  }
+
+  .current-page {
+    font-size: 15px;
+  }
+
+  /* Los hijos de las acciones pasan a ser parte de la fila del topbar: así el
+     avatar y "Salir" quedan junto al título y solo el selector baja de fila */
+  .topbar-actions {
+    display: contents;
+  }
+
+  .role-select {
+    order: 10;
+    flex: 1 1 100%;
+    min-width: 0;
+    font-size: 16px;
+  }
+
+  .avatar,
+  .btn-logout {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+}

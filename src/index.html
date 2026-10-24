@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8">
+  <title>Digital Fix S.A</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="DigitalFix - Plataforma de gestión y servicios en línea">
+  <!-- Logo en PNG liviano (8 kB): digitalfix.svg trae PNGs de 2000 px incrustados y pesa 146 kB -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="preload" as="image" href="digitalfix-128.png">
+  <!-- Conexión temprana a Google Fonts: la fuente de íconos se pide antes de que el CSS la necesite -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- display=block: mientras llega la fuente no se ve el nombre del ícono como texto ("refresh") -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons&display=block">
+
+  <!-- Pantalla de carga al iniciar sesión (ver src/app/config/pantalla-carga.ts).
+       Estilos inline para que esté lista antes de que cargue la hoja de estilos. -->
+  <style>
+    #df-carga {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.25rem;
+      background: radial-gradient(circle at 80% 10%, #1f2937 0%, #0b0f17 55%, #000 100%);
+      color: #fff;
+      font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    html.df-cargando #df-carga {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+    #df-carga .df-marca {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    #df-carga .df-marca img { height: 34px; }
+    #df-carga .df-marca span { color: #3b82f6; }
+    #df-carga .df-spinner {
+      width: 42px;
+      height: 42px;
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: df-giro 0.8s linear infinite;
+    }
+    #df-carga p { margin: 0; font-size: 0.95rem; color: #9ca3af; }
+    @keyframes df-giro { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      #df-carga .df-spinner { animation-duration: 2.4s; }
+    }
+  </style>
+  <script>
+    // Se muestra solo donde se renderiza el login ('/' y '/login') y solo si
+    // se vuelve desde Microsoft (#code=... / #error=...) o ya hay una cuenta
+    // de MSAL en caché (msal.<versión>.account.keys), porque en ambos casos
+    // el login va a redirigir a home en vez de mostrar el formulario.
+    (function () {
+      try {
+        var ruta = window.location.pathname.replace(/\/+$/, '');
+        if (ruta !== '' && ruta !== '/login') return;
+        var hash = window.location.hash;
+        var vuelveDeMicrosoft = /[#&](code|error)=/.test(hash);
+        var haySesion = Object.keys(localStorage).some(function (clave) {
+          if (clave.indexOf('msal.') !== 0 || !/account\.keys$/.test(clave)) return false;
+          var cuentas = JSON.parse(localStorage.getItem(clave) || '[]');
+          return Array.isArray(cuentas) && cuentas.length > 0;
+        });
+        if (!vuelveDeMicrosoft && !haySesion) return;
+        document.documentElement.classList.add('df-cargando');
+        // Respaldo: si Angular no arranca, no dejar la pantalla tapada.
+        setTimeout(function () { document.documentElement.classList.remove('df-cargando'); }, 20000);
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <div id="df-carga" role="status" aria-live="polite">
+    <div class="df-marca">
+      <img src="digitalfix-128.png" alt="" width="34" height="34" onerror="this.style.display='none'">
+      <div>Digital<span>Fix</span></div>
+    </div>
+    <div class="df-spinner" aria-hidden="true"></div>
+    <p>Iniciando sesión…</p>
+  </div>
+  <app-root></app-root>
+</body>
+</html>

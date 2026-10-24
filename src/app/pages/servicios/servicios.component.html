@@ -1,0 +1,162 @@
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2>Catálogo de servicios</h2>
+      <p>{{ cantidadActivos }} activos de {{ servicios.length }} · son los que el cliente elige al crear una orden</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-refresh" type="button" (click)="cargar()" [disabled]="cargando" title="Actualizar lista">
+        <span class="material-icons" [class.rotating]="cargando">refresh</span>
+      </button>
+      <button class="btn-primary" type="button" (click)="abrirCreacion()">+ Nuevo servicio</button>
+    </div>
+  </div>
+
+  @if (mensajeExito) {
+    <div class="alert alert-success">
+      <span class="material-icons">check_circle</span>
+      <span>{{ mensajeExito }}</span>
+      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
+    </div>
+  }
+  @if (mensajeError && !modalAbierto) {
+    <div class="alert alert-danger">
+      <span class="material-icons">error_outline</span>
+      <span>{{ mensajeError }}</span>
+      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
+    </div>
+  }
+
+  <div class="filters">
+    <div class="search-input-wrapper">
+      <span class="material-icons search-icon">search</span>
+      <input type="search" placeholder="Buscar por código, nombre o descripción..." [(ngModel)]="terminoBusqueda" />
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Servicio</th>
+          <th>Tarifa</th>
+          <th>Estado</th>
+          <th>Actualizado</th>
+          <th class="actions-col">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando) {
+          <tr>
+            <td colspan="6" class="loading-cell">
+              <div class="spinner-small"></div>
+              <span>Consultando el catálogo en digitalfix-ms-workorders...</span>
+            </td>
+          </tr>
+        } @else {
+          @for (servicio of serviciosFiltrados; track servicio.idServicio) {
+            <tr>
+              <td class="id-cell">{{ servicio.codigo }}</td>
+              <td>
+                <div class="main-cell">
+                  <strong>{{ servicio.nombre }}</strong>
+                  @if (servicio.descripcion) {
+                    <span class="sub-text">{{ servicio.descripcion }}</span>
+                  }
+                </div>
+              </td>
+              <td class="money">${{ servicio.tarifa | number:'1.0-0' }}</td>
+              <td>
+                <span class="badge" [class.badge-activo]="servicio.activo" [class.badge-inactivo]="!servicio.activo">
+                  {{ servicio.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>{{ (servicio.fechaActualizacion ?? servicio.fechaCreacion) | date:'d MMM y' }}</td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn-ghost" type="button" (click)="eliminar(servicio)">Eliminar</button>
+                  <button class="btn-secondary" type="button" (click)="abrirEdicion(servicio)">Editar</button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-hint">
+                <span class="material-icons empty-icon">handyman</span>
+                <p>{{ servicios.length ? 'No hay servicios que coincidan con la búsqueda.' : 'Aún no hay servicios. Crea el primero para que los clientes puedan elegirlo.' }}</p>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (modalAbierto) {
+  <div class="overlay" (click)="cerrarModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ idEditando === null ? 'Nuevo servicio' : 'Editar servicio' }}</h3>
+        <button type="button" class="material-icons close-btn" (click)="cerrarModal()">close</button>
+      </div>
+      <p class="modal-sub">Los campos con * son obligatorios.</p>
+
+      @if (mensajeError) {
+        <div class="alert alert-danger">
+          <span class="material-icons">error_outline</span>
+          <span>{{ mensajeError }}</span>
+        </div>
+      }
+
+      <form class="modal-body-form" #form="ngForm" (ngSubmit)="guardar()">
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="codigo">Código</label>
+            <input id="codigo" name="codigo" [value]="idEditando !== null ? codigoEditando : 'Se asigna al guardar'" disabled />
+            <span class="form-hint">Lo genera el sistema (SRV-0001, SRV-0002...).</span>
+          </div>
+          <div class="form-field">
+            <label for="tarifa">Tarifa *</label>
+            <div class="input-prefix">
+              <span>$</span>
+              <input id="tarifa" name="tarifa" appPesos [(ngModel)]="formulario.tarifa" #tarifa="ngModel" required />
+            </div>
+            @if (tarifa.invalid && tarifa.touched) {
+              <span class="field-error">Indica la tarifa en pesos.</span>
+            } @else {
+              <span class="form-hint">Pesos chilenos; se cobra al agregarlo a una orden.</span>
+            }
+          </div>
+          <div class="form-field full">
+            <label for="nombre">Nombre *</label>
+            <input id="nombre" name="nombre" appCapitalizar="primera" [(ngModel)]="formulario.nombre" #nombre="ngModel"
+              maxlength="100" pattern="^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9 .,&'()/-]*$" placeholder="Revisión de tablero eléctrico" required />
+            @if (nombre.invalid && nombre.touched) {
+              <span class="field-error">{{ nombre.errors?.['required'] ? 'Indica el nombre del servicio.' : 'El nombre contiene caracteres no permitidos.' }}</span>
+            }
+          </div>
+          <div class="form-field full">
+            <label for="descripcion">Descripción</label>
+            <textarea id="descripcion" name="descripcion" rows="2" maxlength="255" [(ngModel)]="formulario.descripcion"
+              placeholder="Qué incluye el servicio"></textarea>
+          </div>
+          @if (idEditando !== null) {
+            <label class="checkbox-field full">
+              <input type="checkbox" name="activo" [(ngModel)]="formulario.activo" />
+              Activo (se ofrece al crear órdenes)
+            </label>
+          }
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="guardando || form.invalid">
+            {{ guardando ? 'Guardando...' : (idEditando === null ? 'Crear servicio' : 'Guardar cambios') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

@@ -1,0 +1,105 @@
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2>Clientes</h2>
+      <p>{{ clientesFiltrados.length }} de {{ clientes.length }} clientes registrados en digitalfix-ms-workorders</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-refresh" type="button" (click)="cargar()" [disabled]="cargando" title="Actualizar lista">
+        <span class="material-icons" [class.rotating]="cargando">refresh</span>
+      </button>
+      <a class="btn-primary" routerLink="/clientes/nuevo">+ Nuevo cliente</a>
+    </div>
+  </div>
+
+  @if (mensajeExito) {
+    <div class="alert alert-success">
+      <span class="material-icons">check_circle</span>
+      <span>{{ mensajeExito }}</span>
+      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
+    </div>
+  }
+  @if (mensajeError) {
+    <div class="alert alert-danger">
+      <span class="material-icons">error_outline</span>
+      <span>{{ mensajeError }}</span>
+      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
+    </div>
+  }
+
+  <div class="filters">
+    <div class="search-input-wrapper">
+      <span class="material-icons search-icon">search</span>
+      <input type="search" placeholder="Buscar por nombre, RUT, correo, teléfono o comuna..." [(ngModel)]="terminoBusqueda" />
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Contacto</th>
+          <th>Dirección</th>
+          <th>Registrado</th>
+          <th class="actions-col">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando) {
+          <tr>
+            <td colspan="5" class="loading-cell">
+              <div class="spinner-small"></div>
+              <span>Consultando clientes en digitalfix-ms-workorders...</span>
+            </td>
+          </tr>
+        } @else {
+          @for (cliente of clientesFiltrados; track cliente.idCliente) {
+            <tr>
+              <td>
+                <div class="main-cell">
+                  <strong>{{ cliente.nombreCompleto }}</strong>
+                  <span class="sub-text">{{ cliente.rut }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="main-cell">
+                  <span>{{ cliente.email }}</span>
+                  <span class="sub-text">
+                    {{ cliente.telefono | telefonoCl }}
+                    @if (cliente.telefonoSecundario) { · {{ cliente.telefonoSecundario | telefonoCl }} }
+                  </span>
+                </div>
+              </td>
+              <td>
+                @if (cliente.direccion; as dir) {
+                  <div class="main-cell">
+                    <a class="map-link inline" [href]="enlaceMapa(dir.textoCompleto)" target="_blank" rel="noopener noreferrer"
+                      title="Ver en Google Maps">{{ dir.calle }} {{ dir.numero }}{{ dir.detalle ? ', ' + dir.detalle : '' }}</a>
+                    <span class="sub-text">{{ dir.comuna }}, {{ dir.region }}</span>
+                  </div>
+                } @else {
+                  <span class="badge badge-pendiente" title="Edita el cliente para agregar su dirección">Sin dirección</span>
+                }
+              </td>
+              <td>{{ cliente.fechaCreacion | date:'d MMM y' }}</td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn-ghost" type="button" (click)="eliminar(cliente)">Eliminar</button>
+                  <a class="btn-secondary" [routerLink]="['/clientes', cliente.idCliente, 'editar']">Editar</a>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="empty-hint">
+                <span class="material-icons empty-icon">groups</span>
+                <p>No hay clientes que coincidan con la búsqueda.</p>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
