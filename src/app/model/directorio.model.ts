@@ -84,7 +84,7 @@ export function mensajeDeError(err: any, accion: string): string {
         return cuerpo.message;
     }
     if (err?.status === 0) {
-        return `No se pudo ${accion}: digitalfix-ms-workorders no responde.`;
+        return `No se pudo ${accion}: el servidor no responde. Revisa tu conexión o intenta en unos segundos.`;
     }
     if (err?.status === 403) {
         return `No tienes permisos para ${accion}.`;

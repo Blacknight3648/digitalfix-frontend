@@ -5,7 +5,7 @@
   display: flex;
   flex-direction: column;
   padding: 20px 16px;
-  min-height: 100vh;
+  min-height: 100%;
 }
 
 .sidebar-brand {
@@ -14,18 +14,6 @@
   gap: 12px;
   padding: 0 8px;
   margin-bottom: 28px;
-}
-
-.brand-logo {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--primario);
-  color: var(--blanco);
-  font-size: 22px;
-  flex-shrink: 0;
 }
 
 .brand-text {
@@ -102,39 +90,89 @@
   border-top: 1px solid var(--borde);
 }
 
-/* En pantallas angostas el rail vertical no cabe: pasa a barra horizontal
-   con solo íconos (el nombre completo de cada ítem queda en el title). */
-@media (max-width: 880px) {
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Solo existe en el panel móvil */
+.btn-cerrar-menu {
+  display: none;
+}
+
+/* Riel de íconos (881–1199px): mismo menú sin textos; el nombre queda en el title */
+@media (max-width: 1199px) and (min-width: 881px) {
   .sidebar {
-    min-height: auto;
-    flex-direction: row;
+    padding: 20px 10px;
     align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
-    border-right: none;
-    border-bottom: 1px solid var(--borde);
   }
 
   .sidebar-brand {
-    margin-bottom: 0;
     padding: 0;
+    margin-bottom: 24px;
   }
 
-  .brand-sub,
+  .brand-text,
   .nav-section,
-  .sidebar-spacer,
+  .nav-label,
   .sidebar-footer {
     display: none;
   }
 
   .nav-list {
-    flex-direction: row;
-    flex-wrap: wrap;
-    flex: 1;
-    justify-content: flex-end;
+    width: 100%;
+    align-items: center;
   }
 
-  .nav-link span:last-child {
-    display: none;
+  .nav-link {
+    justify-content: center;
+    width: 48px;
+    height: 44px;
+    padding: 0;
+  }
+}
+
+/* Panel deslizable (≤ 880px): el menú completo, con botón para cerrarlo */
+@media (max-width: 880px) {
+  .sidebar {
+    min-height: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 16px 12px;
+    border-right: none;
+  }
+
+  .sidebar-brand {
+    margin-bottom: 20px;
+  }
+
+  .btn-cerrar-menu {
+    display: grid;
+    place-items: center;
+    margin-left: auto;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--texto-secundario);
+    cursor: pointer;
+  }
+
+  .btn-cerrar-menu:hover {
+    background: var(--gris-suave);
+    color: var(--texto);
+  }
+
+  /* Áreas táctiles de al menos 44px */
+  .nav-link {
+    min-height: 44px;
   }
 }

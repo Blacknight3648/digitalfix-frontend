@@ -1,5 +1,16 @@
 <div class="topbar">
   <div class="topbar-title">
+    <!-- Solo en pantallas angostas (≤ 880px), donde el menú es un panel deslizable -->
+    <button
+      class="icon-btn btn-menu"
+      type="button"
+      (click)="menu.alternar()"
+      [attr.aria-expanded]="menu.abierto()"
+      aria-controls="menu-principal"
+      aria-label="Abrir menú"
+    >
+      <span class="material-icons">menu</span>
+    </button>
     <span class="breadcrumb">DigitalFix</span>
     <span class="material-icons breadcrumb-sep">chevron_right</span>
     <span class="current-page">{{ pageTitle() }}</span>

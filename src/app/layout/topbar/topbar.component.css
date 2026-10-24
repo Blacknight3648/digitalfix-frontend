@@ -152,31 +152,78 @@
   color: var(--cancelada-fg);
 }
 
+/* Solo existe cuando el menú es un panel deslizable */
+.btn-menu {
+  display: none;
+  margin-right: 4px;
+}
+
+/* Riel de íconos: el topbar acompaña el padding del contenido */
+@media (max-width: 1199px) {
+  .topbar {
+    padding: 0 clamp(16px, 2.6vw, 32px);
+  }
+}
+
 @media (max-width: 880px) {
+  .btn-menu {
+    display: grid;
+  }
+
   .user-text,
   .logout-label {
     display: none;
   }
 }
 
+/* Teléfonos: una sola fila con ☰, título, avatar y salir. Los íconos sin función
+   todavía (notificaciones, soporte) y la miga "DigitalFix ›" se ocultan; el
+   selector "Ver como…" del Superadmin baja a una segunda fila a lo ancho. */
 @media (max-width: 640px) {
   .topbar {
     flex-wrap: wrap;
     height: auto;
-    padding: 12px 16px;
+    min-height: 56px;
+    padding: 8px 12px;
+    gap: 8px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 40;
   }
 
+  .topbar-title {
+    flex: 1;
+  }
+
+  .breadcrumb,
+  .breadcrumb-sep,
+  .icons,
+  .divider {
+    display: none;
+  }
+
+  .current-page {
+    font-size: 15px;
+  }
+
+  /* Los hijos de las acciones pasan a ser parte de la fila del topbar: así el
+     avatar y "Salir" quedan junto al título y solo el selector baja de fila */
   .topbar-actions {
-    width: 100%;
-    justify-content: space-between;
+    display: contents;
   }
 
   .role-select {
-    flex: 1;
+    order: 10;
+    flex: 1 1 100%;
     min-width: 0;
+    font-size: 16px;
   }
 
-  .divider {
-    display: none;
+  .avatar,
+  .btn-logout {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
   }
 }
