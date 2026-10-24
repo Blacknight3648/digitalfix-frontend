@@ -4,6 +4,7 @@ import {
   isMainModule,
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
+import compression from 'compression';
 import express from 'express';
 import { join } from 'node:path';
 
@@ -11,6 +12,15 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
+
+// No anunciar la tecnología del servidor ("X-Powered-By: Express") a quien haga una petición.
+app.disable('x-powered-by');
+
+/**
+ * Compresión gzip de todas las respuestas (JS, CSS, HTML y JSON). Sin esto el bundle principal
+ * viaja en crudo (~4 veces más pesado), que es lo que más demora la primera carga en la EC2.
+ */
+app.use(compression());
 
 /**
  * Example Express Rest API endpoints can be defined here.
