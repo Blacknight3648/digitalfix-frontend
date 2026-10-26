@@ -1,0 +1,67 @@
+name: Deploy Frontend to EC2
+
+on:
+  push:
+    branches:
+      - deploy
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend-ec2
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build & Test (Angular)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build SSR
+        run: npm run build
+
+  deploy:
+    name: Deploy to EC2
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_SSH_PORT || secrets.EC2_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+            cd "${{ secrets.EC2_APP_DIR || secrets.EC2_DEPLOY_PATH }}"
+
+            echo "==> Actualizando código a lo último de origin/deploy"
+            git fetch origin deploy
+            git reset --hard origin/deploy
+
+            echo "==> Reconstruyendo y levantando frontend"
+            if [ -f docker-compose.prod.yaml ]; then
+              docker compose -f docker-compose.prod.yaml up -d --build
+            elif [ -f docker-compose.yml ] || [ -f docker-compose.yaml ]; then
+              docker compose up -d --build
+            elif [ -f ../digitalfix-infrastructure/docker-compose.yml ]; then
+              docker compose -f ../digitalfix-infrastructure/docker-compose.yml up -d --build frontend
+            fi
+
+            echo "==> Limpiando imágenes viejas"
+            docker image prune -f
+
+            echo "==> Estado de los contenedores"
+            docker compose ps
