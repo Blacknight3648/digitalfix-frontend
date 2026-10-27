@@ -5,12 +5,10 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 RUN npm ci
-# Instalar Angular CLI explícitamente para asegurar la existencia del ejecutable
-RUN npm install -g @angular/cli
 
 COPY . .
-# Usar la bandera -- para pasar parámetros al script definido en package.json
-RUN npm run build -- --configuration production
+# Llamamos al ejecutable local de Angular directamente en node_modules
+RUN ./node_modules/.bin/ng build --configuration production
 
 # ---- Runtime stage ----
 FROM node:22-alpine AS runtime
