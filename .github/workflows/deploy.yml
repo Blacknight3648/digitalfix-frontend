@@ -45,23 +45,36 @@ jobs:
           script_stop: true
           script: |
             set -e
-            cd "${{ secrets.EC2_APP_DIR || secrets.EC2_DEPLOY_PATH }}"
+
+            # 1. Definir directorio base seguro si las variables de GitHub Secrets no están definidas
+            TARGET_DIR="${{ secrets.EC2_APP_DIR || secrets.EC2_DEPLOY_PATH }}"
+            if [ -z "$TARGET_DIR" ]; then
+              TARGET_DIR="$HOME/digitalfix/digitalfix-infrastructure"
+            fi
+
+            echo "==> Navegando a $TARGET_DIR"
+            cd "$TARGET_DIR"
+
+            # 2. Configurar token de acceso usando el secret de GitHub (GH_PAT) si la URL usa HTTPS con credenciales
+            if [ -n "${{ secrets.GH_PAT }}" ]; then
+              git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+            fi
 
             echo "==> Actualizando código a lo último de origin/deploy"
             git fetch origin deploy
             git reset --hard origin/deploy
 
-            echo "==> Reconstruyendo y levantando frontend"
+            echo "==> Reconstruyendo y levantando contenedor del Frontend"
             if [ -f docker-compose.prod.yaml ]; then
-              docker compose -f docker-compose.prod.yaml up -d --build
+              docker compose -f docker-compose.prod.yaml up -d --build frontend || docker-compose -f docker-compose.prod.yaml up -d --build frontend
             elif [ -f docker-compose.yml ] || [ -f docker-compose.yaml ]; then
-              docker compose up -d --build
+              docker compose up -d --build frontend || docker-compose up -d --build frontend
             elif [ -f ../digitalfix-infrastructure/docker-compose.yml ]; then
-              docker compose -f ../digitalfix-infrastructure/docker-compose.yml up -d --build frontend
+              docker compose -f ../digitalfix-infrastructure/docker-compose.yml up -d --build frontend || docker-compose -f ../digitalfix-infrastructure/docker-compose.yml up -d --build frontend
             fi
 
-            echo "==> Limpiando imágenes viejas"
+            echo "==> Limpiando imágenes colgadas o no utilizadas"
             docker image prune -f
 
-            echo "==> Estado de los contenedores"
-            docker compose ps
+            echo "==> Estado actual de los contenedores"
+            docker compose ps || docker-compose ps
