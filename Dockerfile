@@ -5,8 +5,11 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 RUN npm ci
+# Instalar Angular CLI explícitamente para asegurar la existencia del ejecutable
+RUN npm install -g @angular/cli
 
 COPY . .
+# Usar la bandera -- para pasar parámetros al script definido en package.json
 RUN npm run build -- --configuration production
 
 # ---- Runtime stage ----
