@@ -1,0 +1,64 @@
+name: Build, Push & Dispatch Frontend
+
+on:
+  push:
+    branches:
+      - deploy
+  workflow_dispatch:
+
+concurrency:
+  group: build-push-frontend
+  cancel-in-progress: true
+
+jobs:
+  build-and-push-frontend:
+    name: Build, Push & Dispatch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Iniciar sesión en Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extraer metadatos para Docker (tags y etiquetas)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/digitalfix-frontend
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+
+      - name: Construir y publicar imagen Docker (Angular SSR)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Notificar al Repositorio de Infraestructura
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GH_PAT_INFRA || secrets.GH_PAT }}
+          repository: Blacknight3648/digitalfix-infrastructure
+          event-type: microservice-updated
+          client-payload: >-
+            {
+              "service": "frontend",
+              "image": "${{ secrets.DOCKERHUB_USERNAME }}/digitalfix-frontend:latest",
+              "sha": "${{ github.sha }}",
+              "ref": "${{ github.ref }}",
+              "actor": "${{ github.actor }}"
+            }
+
