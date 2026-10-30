@@ -1,27 +1,32 @@
-# ---- Build stage ----
-FROM node:22-alpine AS build
+# ==========================================
+# Etapa 1: Compilación de la App Angular
+# ==========================================
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+# Copiar archivos de dependencias
+COPY package*.json ./
 RUN npm ci
 
+# Copiar código fuente y compilar para producción
 COPY . .
-# Llamamos al ejecutable local de Angular directamente en node_modules
-RUN ./node_modules/.bin/ng build --configuration production
+RUN npm run build -- --configuration production
 
-# ---- Runtime stage ----
-FROM node:22-alpine AS runtime
+# ==========================================
+# Etapa 2: Servidor Nginx de Producción
+# ==========================================
+FROM nginx:alpine
 
-WORKDIR /app
-ENV NODE_ENV=production
-ENV PORT=4000
+# Limpiar archivos por defecto de Nginx
+RUN rm -rf /usr/share/nginx/html/*
 
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+# Copiar configuración personalizada de Nginx para enrutamiento SPA
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-COPY --from=build /app/dist/digital-fix ./dist/digital-fix
+# Copiar los artefactos estáticos compilados de Angular
+COPY --from=builder /app/dist/digital-fix/browser /usr/share/nginx/html
 
-EXPOSE 4000
+EXPOSE 80
 
-CMD ["node", "dist/digital-fix/server/server.mjs"]
+CMD ["nginx", "-g", "daemon off;"]
