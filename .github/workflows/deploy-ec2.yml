@@ -36,7 +36,7 @@ jobs:
             type=raw,value=latest
             type=sha,prefix=sha-,format=short
 
-      - name: Construir y publicar imagen Docker (Angular SSR)
+      - name: Construir y publicar imagen Docker (Angular Nginx)
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -51,7 +51,7 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.GH_PAT_INFRA || secrets.GH_PAT }}
-          repository: Blacknight3648/digitalfix-infrastructure
+          repository: SolgreyDuocUC/digitalfix-infrastructure
           event-type: microservice-updated
           client-payload: >-
             {
@@ -61,4 +61,3 @@ jobs:
               "ref": "${{ github.ref }}",
               "actor": "${{ github.actor }}"
             }
-
