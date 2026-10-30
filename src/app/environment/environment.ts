@@ -8,6 +8,15 @@
 const currentOrigin =
   typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4200';
 
+// Por HTTPS el proxy (Caddy) enruta /api/* al BFF en el mismo origen. Por HTTP
+// (`ng serve`, túnel SSH) se llama directo al BFF en el puerto 8090.
+const currentBffUrl =
+  typeof window === 'undefined'
+    ? 'http://localhost:8090'
+    : window.location.protocol === 'https:'
+      ? window.location.origin
+      : `${window.location.protocol}//${window.location.hostname}:8090`;
+
 // Misma App Registration y tenant que validan los microservicios (AZURE_CLIENT_ID y
 // AZURE_TENANT_ID del .env de ms-login / ms-user): el access token que pide el
 // frontend lleva aud = api://<clientId> y scp = access_as_user, que es lo que exige
@@ -28,7 +37,7 @@ export const environment = {
   // Única URL de backend que conoce el frontend: digitalfix-bff-gateway. El BFF
   // valida el token (firma, issuer, audience, vigencia, scope y rol) y enruta a
   // ms-login, ms-user o ms-workorders; ningún microservicio se llama directo.
-  bffUrl: 'http://localhost:8090',
+  bffUrl: currentBffUrl,
 };
 
 //Nota: pasar esto a variables de entorno en .env para mayor seguridad
