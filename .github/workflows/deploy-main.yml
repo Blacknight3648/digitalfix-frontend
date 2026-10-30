@@ -1,0 +1,36 @@
+name: Deploy Frontend to AWS EC2
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend-main
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Set up SSH Key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Deploy to EC2 via SSH
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+        run: |
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 $USER@$HOST << 'EOF'
+            set -e
+            cd ~/frontend/digitalfix-frontend
+            git fetch origin main
+            git reset --hard origin/main
+            docker compose build
+            docker compose up -d --force-recreate
+            docker image prune -f
+            docker compose ps
+          EOF
