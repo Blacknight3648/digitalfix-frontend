@@ -1,0 +1,48 @@
+/* Distribución de los campos de dirección. Colores, bordes y tipografía vienen de
+   mantenedor.css; aquí solo va el orden y el tamaño de cada campo.
+
+   Se adapta al ancho del propio componente (container query), no al de la
+   pantalla: el mismo bloque vive en el modal de Proveedores y en una columna de
+   la ficha de Clientes, con anchos muy distintos. */
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+/* Angosto (por defecto): un campo por fila, como en los checkouts móviles. */
+.dir-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px 12px;
+}
+.dir-grid > .form-field { grid-column: span 6; }
+
+/* Número y Depto son cortos: comparten fila incluso en angosto. */
+@container (min-width: 300px) {
+  .dir-grid > .dir-numero, .dir-grid > .dir-detalle { grid-column: span 3; }
+}
+
+/* Ancho: Región | Comuna, Calle (ancha) | Número, Depto | Código postal,
+   Indicaciones a todo el ancho. */
+@container (min-width: 460px) {
+  .dir-grid > .dir-region, .dir-grid > .dir-comuna { grid-column: span 3; }
+  .dir-grid > .dir-calle { grid-column: span 4; }
+  .dir-grid > .dir-numero { grid-column: span 2; }
+  .dir-grid > .dir-detalle, .dir-grid > .dir-postal { grid-column: span 3; }
+}
+
+.dir-grid label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.dir-sin-numero {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--texto-secundario);
+  letter-spacing: 0;
+  gap: 6px;
+}
+.form-field .dir-sin-numero input { width: 14px; height: 14px; padding: 0; flex: none; }
+
+.dir-referencia textarea { min-height: 0; resize: none; }
+.dir-contador { align-self: flex-end; font-variant-numeric: tabular-nums; }
+
+.fieldset .map-link { margin-top: 14px; }

@@ -4,8 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRouteSnapshot, NavigationEnd, Router } from '@angular/router';
 import { filter, map } from 'rxjs';
-import { AuthService } from '../../services/auth.service';
-import { APP_ROLES, AppRole, APP_ROLE_LABEL } from '../../model/user.model';
+import { AuthService } from '@core/auth/auth.service';
+import { APP_ROLES, AppRole, APP_ROLE_LABEL } from '@domain/models/user.model';
 import { EstadoMenuService } from '../estado-menu.service';
 
 @Component({

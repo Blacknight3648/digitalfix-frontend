@@ -1,4 +1,4 @@
-import { AppRole } from '../model/user.model';
+import { AppRole } from '@domain/models/user.model';
 
 export interface NavItem {
     label: string;

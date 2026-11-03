@@ -1,4 +1,4 @@
-name: Deploy Frontend to EC2
+name: CI/CD - Frontend Web
 
 on:
   push:
@@ -31,11 +31,24 @@ jobs:
         run: npm run build
 
   deploy:
-    name: Deploy to EC2
+    name: Despliegue Centralizado
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
+      - name: Disparar CI/CD en digitalfix-infrastructure
+        id: dispatch
+        if: "${{ secrets.INFRA_DISPATCH_TOKEN != '' }}"
+        run: |
+          echo "==> Notificando a digitalfix-infrastructure para desplegar 'frontend'..."
+          curl -s -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.INFRA_DISPATCH_TOKEN }}" \
+            https://api.github.com/repos/SolgreyDuocUC/digitalfix-infrastructure/dispatches \
+            -d '{"event_type": "deploy-service", "client_payload": {"service": "frontend", "branch": "${{ github.ref_name }}"}}'
+          echo "Notificación enviada exitosamente."
+
+      - name: Despliegue directo vía SSH (usando script centralizado)
+        if: "${{ secrets.INFRA_DISPATCH_TOKEN == '' && secrets.EC2_HOST != '' }}"
         uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -45,36 +58,37 @@ jobs:
           script_stop: true
           script: |
             set -e
-
-            # 1. Definir directorio base seguro si las variables de GitHub Secrets no están definidas
-            TARGET_DIR="${{ secrets.EC2_APP_DIR || secrets.EC2_DEPLOY_PATH }}"
-            if [ -z "$TARGET_DIR" ]; then
-              TARGET_DIR="$HOME/digitalfix/digitalfix-infrastructure"
+            APP_DIR="${{ secrets.EC2_APP_DIR || secrets.EC2_DEPLOY_PATH }}"
+            if [ -z "$APP_DIR" ]; then
+              if [ -d "$HOME/DigitalFix" ]; then APP_DIR="$HOME/DigitalFix";
+              elif [ -d "$HOME/digitalfix" ]; then APP_DIR="$HOME/digitalfix";
+              else APP_DIR="$PWD"; fi
             fi
 
-            echo "==> Navegando a $TARGET_DIR"
-            cd "$TARGET_DIR"
-
-            # 2. Configurar token de acceso usando el secret de GitHub (GH_PAT) si la URL usa HTTPS con credenciales
-            if [ -n "${{ secrets.GH_PAT }}" ]; then
-              git config --global url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+            if [ -d "$APP_DIR/digitalfix-infrastructure" ]; then
+              INFRA_DIR="$APP_DIR/digitalfix-infrastructure"
+            elif [ "$(basename "$APP_DIR")" = "digitalfix-infrastructure" ]; then
+              INFRA_DIR="$APP_DIR"
+            else
+              INFRA_DIR="$(dirname "$APP_DIR")/digitalfix-infrastructure"
             fi
 
-            echo "==> Actualizando código a lo último de origin/deploy"
+            echo "==> Ejecutando despliegue centralizado para frontend..."
+            cd "$INFRA_DIR"
             git fetch origin deploy
             git reset --hard origin/deploy
+            chmod +x deploy/deploy.sh
+            ./deploy/deploy.sh frontend "${{ github.ref_name }}" true
 
-            echo "==> Reconstruyendo y levantando contenedor del Frontend"
-            if [ -f docker-compose.prod.yaml ]; then
-              docker compose -f docker-compose.prod.yaml up -d --build frontend || docker-compose -f docker-compose.prod.yaml up -d --build frontend
-            elif [ -f docker-compose.yml ] || [ -f docker-compose.yaml ]; then
-              docker compose up -d --build frontend || docker-compose up -d --build frontend
-            elif [ -f ../digitalfix-infrastructure/docker-compose.yml ]; then
-              docker compose -f ../digitalfix-infrastructure/docker-compose.yml up -d --build frontend || docker-compose -f ../digitalfix-infrastructure/docker-compose.yml up -d --build frontend
-            fi
-
-            echo "==> Limpiando imágenes colgadas o no utilizadas"
-            docker image prune -f
-
-            echo "==> Estado actual de los contenedores"
-            docker compose ps || docker-compose ps
+      - name: Resumen de despliegue centralizado
+        if: "${{ secrets.INFRA_DISPATCH_TOKEN == '' && secrets.EC2_HOST == '' }}"
+        run: |
+          echo "=========================================================================="
+          echo " El despliegue de DigitalFix está centralizado en digitalfix-infrastructure."
+          echo " Compilación exitosa para digitalfix-frontend."
+          echo ""
+          echo " Para desplegar a EC2:"
+          echo "   1. Ve a: https://github.com/SolgreyDuocUC/digitalfix-infrastructure/actions"
+          echo "   2. Selecciona 'Despliegue Centralizado DigitalFix a EC2'"
+          echo "   3. Haz clic en 'Run workflow' y elige 'frontend' o 'all'."
+          echo "=========================================================================="
