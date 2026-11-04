@@ -11,7 +11,6 @@ import { filter } from 'rxjs';
   standalone: true,         //Esto indica que el componente es independiente y no necesita de un módulo para funcionar
   imports: [RouterOutlet],  //Esto indica que el componente necesita de otro componente para funcionar, en este caso el RouterOutlet que es el que permite mostrar las rutas (centraliza los componentes para lograr un buen desacoplamiento)
   templateUrl: './app.html',
-  styleUrl: './app.scss'
 })
 export class App {
   protected readonly title = signal('digital-fix');

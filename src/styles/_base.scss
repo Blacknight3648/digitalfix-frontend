@@ -1,0 +1,12 @@
+// ============================================================================
+// Base: reset mínimo y tipografía del documento.
+// ============================================================================
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--texto);
+}

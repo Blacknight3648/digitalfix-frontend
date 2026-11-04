@@ -1,8 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
-import { hasRoleAccess } from '../../model/user.model';
+import { AuthService } from '@core/auth/auth.service';
+import { hasRoleAccess } from '@domain/models/user.model';
 import { NAV_ITEMS } from '../nav-items';
 import { EstadoMenuService } from '../estado-menu.service';
 
