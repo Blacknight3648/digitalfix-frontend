@@ -15,15 +15,16 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
-    // Arquitectura en capas (ver ARQUITECTURA.md). Entre capas se importa siempre
-    // por alias; dentro de una misma capa, con rutas relativas.
+    // Arquitectura por carpetas (ver ARQUITECTURA.md). Entre carpetas se importa siempre
+    // por alias; dentro de una misma carpeta, con rutas relativas.
     "paths": {
-      "@core/*": ["./src/app/core/*"],
-      "@domain/*": ["./src/app/domain/*"],
+      "@components/*": ["./src/app/components/*"],
+      "@contexts/*": ["./src/app/contexts/*"],
+      "@remote/*": ["./src/app/remote/*"],
+      "@models/*": ["./src/app/models/*"],
       "@data/*": ["./src/app/data/*"],
-      "@shared/*": ["./src/app/shared/*"],
-      "@layout/*": ["./src/app/layout/*"],
-      "@features/*": ["./src/app/features/*"]
+      "@utils/*": ["./src/app/utils/*"],
+      "@config/*": ["./src/app/config/*"]
     }
   },
   "angularCompilerOptions": {

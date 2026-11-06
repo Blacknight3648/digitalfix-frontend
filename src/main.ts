@@ -14,8 +14,8 @@ import { appConfig } from './app/app.config';
 import {
   msalInstanceFactory,
   msalInterceptorConfigFactory,
-} from '@core/auth/msal.config';
-import { AUTH_REDIRECT_ERROR, prepareAuth } from '@core/auth/auth-startup';
+} from '@contexts/auth/msal.config';
+import { AUTH_REDIRECT_ERROR, prepareAuth } from '@contexts/auth/auth-startup';
 import { App } from './app/app';
 
 /**

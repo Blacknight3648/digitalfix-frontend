@@ -5,8 +5,8 @@ import { PreloadAllModules, provideRouter, withComponentInputBinding, withPreloa
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 import { routes } from './app.routes';
-import { PuertoOrdenesTrabajo } from '@domain/ports/servicio-ordenes-trabajo.port';
-import { ServicioOrdenesTrabajo } from '@data/services/servicio-ordenes-trabajo.service';
+import { PuertoOrdenesTrabajo } from '@remote/service/ordenes-trabajo/servicio-ordenes-trabajo.port';
+import { ServicioOrdenesTrabajo } from '@remote/service/ordenes-trabajo/servicio-ordenes-trabajo.service';
 
 // Formato chileno en todos los pipes: montos con punto de miles ($15.000) y fechas en español.
 registerLocaleData(localeEsCl);

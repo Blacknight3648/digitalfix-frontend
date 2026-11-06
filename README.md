@@ -34,7 +34,7 @@ La aplicación queda disponible en `http://localhost:4200/` con recarga en calie
 
 ### Configuración de Azure AD (MSAL)
 
-Los parámetros de autenticación se definen en [`src/app/core/config/environment.ts`](src/app/core/config/environment.ts):
+Los parámetros de autenticación se definen en [`src/app/config/environment.ts`](src/app/config/environment.ts):
 
 ```ts
 export const environment = {
@@ -150,7 +150,7 @@ docker compose down
 
 ### ⚠️ MSAL y el Redirect URI (importante)
 
-El `redirectUri` de MSAL se calcula dinámicamente a partir de `window.location.origin` (ver [`environment.ts`](src/app/core/config/environment.ts)), así que la app siempre le pide a Azure AD que la devuelva al mismo origen desde el que se inició el login. Pero **Azure AD solo acepta orígenes que estén dados de alta como Redirect URI en el App Registration** ("DigitalFix" en Microsoft Entra ID → Authentication → Redirect URIs).
+El `redirectUri` de MSAL se calcula dinámicamente a partir de `window.location.origin` (ver [`environment.ts`](src/app/config/environment.ts)), así que la app siempre le pide a Azure AD que la devuelva al mismo origen desde el que se inició el login. Pero **Azure AD solo acepta orígenes que estén dados de alta como Redirect URI en el App Registration** ("DigitalFix" en Microsoft Entra ID → Authentication → Redirect URIs).
 
 - Si vas a exponer la app en un puerto/host distinto a los ya registrados (por ejemplo, corriendo el contenedor directo en `4000` en vez de `4200`, o en un dominio de producción), primero agrega esa URL exacta en el App Registration, o el login de Microsoft terminará con `AADSTS50011` (redirect URI mismatch) o, si el navegador sí vuelve a un puerto sin nada escuchando, con `ERR_CONNECTION_REFUSED`.
 - Por eso el `docker-compose.yml` y el ejemplo de `docker run` mapean el contenedor al puerto `4200`: es el que ya está registrado, así no hace falta tocar Azure para probar la imagen localmente.
@@ -173,13 +173,19 @@ digitalfix-frontend/
 ├── angular.json
 ├── package.json
 └── src/
-    ├── app/                # Arquitectura en capas: ver ARQUITECTURA.md
-    │   ├── core/           # Transversal: sesión MSAL, guards, environment
-    │   ├── domain/         # Modelos, reglas y puertos (sin Angular ni HTTP)
-    │   ├── data/           # Servicios HTTP hacia el BFF y datos de demostración
-    │   ├── shared/         # Componentes, directivas, pipes y utilidades reutilizables
-    │   ├── layout/         # Layout principal, sidebar, topbar, menú por rol
-    │   └── features/       # Pantallas (login, órdenes, catálogo, clientes, proveedores...)
+    ├── app/                # Arquitectura por carpetas: ver ARQUITECTURA.md
+    │   ├── components/
+    │   │   ├── layout/     # Layout principal, sidebar, topbar, menú por rol
+    │   │   ├── pages/      # Pantallas numeradas (1-login, 2-home, 3-catalogo, ...)
+    │   │   └── ui/         # Componentes, directivas y pipes reutilizables
+    │   ├── contexts/       # Estado global: sesión MSAL (AuthService) y guards
+    │   ├── remote/
+    │   │   ├── dto/        # Contratos con el backend (respuestas y peticiones)
+    │   │   └── service/    # Servicios HTTP hacia el BFF, uno por área (api.ts = URL base)
+    │   ├── models/         # Tipos y reglas de dominio (estados, etiquetas, roles)
+    │   ├── data/           # Datos de demostración de solo lectura
+    │   ├── utils/          # Funciones puras (formato chileno, mensajes de error)
+    │   └── config/         # environment y pantalla de carga
     ├── styles/             # CSS unificado: tokens, base y componentes compartidos
     ├── styles.scss         # Única entrada de estilos globales
     ├── main.ts             # Bootstrap del cliente (browser)

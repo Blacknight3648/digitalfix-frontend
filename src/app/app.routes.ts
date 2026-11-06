@@ -1,8 +1,8 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from '@features/login/login.component';
-import { MainLayoutComponent } from '@layout/main-layout/main-layout.component';
-import { authGuard } from '@core/auth/guards/auth.guard';
-import { roleGuard } from '@core/auth/guards/role.guard';
+import { LoginComponent } from '@components/pages/1-login/login.component';
+import { MainLayoutComponent } from '@components/layout/main-layout/main-layout.component';
+import { authGuard } from '@contexts/auth/guards/auth.guard';
+import { roleGuard } from '@contexts/auth/guards/role.guard';
 
 // Carga diferida: el bundle inicial solo trae el login y el layout. Cada pantalla interna se
 // descarga la primera vez que se visita (loadComponent), así el login abre rápido aunque la app crezca.
@@ -21,7 +21,7 @@ export const routes: Routes = [
         children: [
             {
                 path: 'dashboard',
-                loadComponent: () => import('@features/coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
+                loadComponent: () => import('@components/pages/9-coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
                 data: {
                     title: 'Dashboard',
                     description: 'KPIs y resumen operativo. Disponible cuando ms-digitalfix-report esté integrado.',
@@ -29,19 +29,19 @@ export const routes: Routes = [
             },
             {
                 path: 'home',
-                loadComponent: () => import('@features/home/home.component').then((m) => m.HomeComponent),
+                loadComponent: () => import('@components/pages/2-home/home.component').then((m) => m.HomeComponent),
                 canActivate: [roleGuard],
                 data: { title: 'Órdenes de trabajo', roles: ['ADMIN', 'SUPERVISOR', 'CLIENTE'] },
             },
             {
                 path: 'catalog',
-                loadComponent: () => import('@features/catalogo/catalogo.component').then((m) => m.CatalogoComponent),
+                loadComponent: () => import('@components/pages/3-catalogo/catalogo.component').then((m) => m.CatalogoComponent),
                 canActivate: [roleGuard],
                 data: { title: 'Catálogo técnico', roles: ['ADMIN', 'SUPERVISOR'] },
             },
             {
                 path: 'reports',
-                loadComponent: () => import('@features/coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
+                loadComponent: () => import('@components/pages/9-coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
                 canActivate: [roleGuard],
                 data: {
                     title: 'Reportería',
@@ -51,7 +51,7 @@ export const routes: Routes = [
             },
             {
                 path: 'audit',
-                loadComponent: () => import('@features/coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
+                loadComponent: () => import('@components/pages/9-coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
                 canActivate: [roleGuard],
                 data: {
                     title: 'Auditoría',
@@ -61,43 +61,43 @@ export const routes: Routes = [
             },
             {
                 path: 'usuarios',
-                loadComponent: () => import('@features/usuarios/usuarios.component').then((m) => m.UsuariosComponent),
+                loadComponent: () => import('@components/pages/4-usuarios/usuarios.component').then((m) => m.UsuariosComponent),
                 canActivate: [roleGuard],
                 data: { title: 'Usuarios', roles: ['SUPERADMIN'] },
             },
             {
                 path: 'servicios',
-                loadComponent: () => import('@features/servicios/servicios.component').then((m) => m.ServiciosComponent),
+                loadComponent: () => import('@components/pages/5-servicios/servicios.component').then((m) => m.ServiciosComponent),
                 canActivate: [roleGuard],
                 data: { title: 'Catálogo de servicios', roles: ['SUPERADMIN'] },
             },
             {
                 path: 'clientes',
-                loadComponent: () => import('@features/clientes/clientes.component').then((m) => m.ClientesComponent),
+                loadComponent: () => import('@components/pages/6-clientes/clientes.component').then((m) => m.ClientesComponent),
                 canActivate: [roleGuard],
                 data: { title: 'Clientes', roles: ['SUPERADMIN'] },
             },
             {
                 path: 'clientes/nuevo',
-                loadComponent: () => import('@features/clientes/cliente-form/cliente-form.component').then((m) => m.ClienteFormComponent),
+                loadComponent: () => import('@components/pages/6-clientes/cliente-form/cliente-form.component').then((m) => m.ClienteFormComponent),
                 canActivate: [roleGuard],
                 data: { title: 'Nuevo cliente', roles: ['SUPERADMIN'] },
             },
             {
                 path: 'clientes/:id/editar',
-                loadComponent: () => import('@features/clientes/cliente-form/cliente-form.component').then((m) => m.ClienteFormComponent),
+                loadComponent: () => import('@components/pages/6-clientes/cliente-form/cliente-form.component').then((m) => m.ClienteFormComponent),
                 canActivate: [roleGuard],
                 data: { title: 'Editar cliente', roles: ['SUPERADMIN'] },
             },
             {
                 path: 'proveedores',
-                loadComponent: () => import('@features/proveedores/proveedores.component').then((m) => m.ProveedoresComponent),
+                loadComponent: () => import('@components/pages/7-proveedores/proveedores.component').then((m) => m.ProveedoresComponent),
                 canActivate: [roleGuard],
                 data: { title: 'Proveedores', roles: ['SUPERADMIN'] },
             },
             {
                 path: 'mensajeria',
-                loadComponent: () => import('@features/mensajeria/mensajeria.component').then((m) => m.MensajeriaComponent),
+                loadComponent: () => import('@components/pages/8-mensajeria/mensajeria.component').then((m) => m.MensajeriaComponent),
                 canActivate: [roleGuard],
                 data: { title: 'Mensajería', roles: ['SUPERADMIN'] },
             },
