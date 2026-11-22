@@ -40,10 +40,32 @@
   <div class="filters">
     <div class="search-input-wrapper">
       <span class="material-icons search-icon">search</span>
-      <input type="search" placeholder="Buscar por código, nombre o descripción..." [(ngModel)]="terminoBusqueda" />
+      <input type="search" placeholder="Buscar repuesto por nombre..." [formControl]="searchControl" />
+    </div>
+    <div class="sort-group" role="group" aria-label="Orden alfabético">
+      <button
+        type="button"
+        [class.btn-primary]="currentSort === 'asc'"
+        [class.active]="currentSort === 'asc'"
+        [class.btn-secondary]="currentSort !== 'asc'"
+        [attr.aria-pressed]="currentSort === 'asc'"
+        (click)="cambiarOrden('asc')"
+      >
+        A-Z
+      </button>
+      <button
+        type="button"
+        [class.btn-primary]="currentSort === 'desc'"
+        [class.active]="currentSort === 'desc'"
+        [class.btn-secondary]="currentSort !== 'desc'"
+        [attr.aria-pressed]="currentSort === 'desc'"
+        (click)="cambiarOrden('desc')"
+      >
+        Z-A
+      </button>
     </div>
     <label class="checkbox-field">
-      <input type="checkbox" [(ngModel)]="soloBajoStock" />
+      <input type="checkbox" [(ngModel)]="soloBajoStock" (ngModelChange)="cargar()" />
       Solo por reponer
     </label>
   </div>
@@ -69,7 +91,7 @@
             </td>
           </tr>
         } @else {
-          @for (repuesto of repuestosFiltrados; track repuesto.idRepuesto) {
+          @for (repuesto of repuestos; track repuesto.idRepuesto) {
             <tr>
               <td class="id-cell">{{ repuesto.codigo }}</td>
               <td>
@@ -111,7 +133,7 @@
             <tr>
               <td colspan="6" class="empty-hint">
                 <span class="material-icons empty-icon">inventory_2</span>
-                <p>{{ repuestos.length ? 'No hay repuestos que coincidan con los filtros.' : 'Aún no hay repuestos en el catálogo.' }}</p>
+                <p>{{ hayFiltrosActivos ? 'No se encontraron repuestos con los criterios ingresados' : 'Aún no hay repuestos en el catálogo.' }}</p>
               </td>
             </tr>
           }

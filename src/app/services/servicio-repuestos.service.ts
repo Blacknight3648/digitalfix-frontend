@@ -4,6 +4,8 @@ import { Observable } from 'rxjs';
 import { environment } from '../environment/environment';
 import { EntradaStockPeticion, MovimientoStock, Repuesto, RepuestoPeticion } from '../model/repuesto.model';
 
+export type OrdenAlfabetico = 'asc' | 'desc';
+
 // Repuestos y stock de ms-catalog, vía BFF. Usa HttpClient para que MsalInterceptor adjunte el
 // Bearer token (bffUrl es recurso protegido). Las salidas y devoluciones de stock no están aquí:
 // las hace ms-workorders al asignar la orden (el BFF bloquea /api/catalog/stock al frontend).
@@ -15,8 +17,23 @@ export class ServicioRepuestos {
     private readonly ruta = `${environment.bffUrl}/api/catalog/repuestos`;
 
     // soloActivos: lo que se puede agregar a una orden. bajoStock: lo que hay que reponer.
-    listar(soloActivos = false, bajoStock = false): Observable<Repuesto[]> {
-        const params = new HttpParams().set('soloActivos', soloActivos).set('bajoStock', bajoStock);
+    // search / sort: búsqueda por nombre y orden alfabético ('asc' A-Z, 'desc' Z-A) en ms-catalog.
+    listar(
+        soloActivos = false,
+        bajoStock = false,
+        search = '',
+        sort: OrdenAlfabetico = 'asc',
+    ): Observable<Repuesto[]> {
+        let params = new HttpParams()
+            .set('soloActivos', soloActivos)
+            .set('bajoStock', bajoStock)
+            .set('sort', sort);
+
+        const termino = search.trim();
+        if (termino) {
+            params = params.set('search', termino);
+        }
+
         return this.http.get<Repuesto[]>(this.ruta, { params });
     }
 

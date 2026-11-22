@@ -1,6 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Subject, catchError, debounceTime, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
 import {
     ETIQUETA_TIPO_MOVIMIENTO,
     ETIQUETA_UNIDAD_MEDIDA,
@@ -13,7 +15,7 @@ import {
 import { mensajeDeError } from '../../model/directorio.model';
 import { hasRoleAccess } from '../../model/user.model';
 import { AuthService } from '../../services/auth.service';
-import { ServicioRepuestos } from '../../services/servicio-repuestos.service';
+import { OrdenAlfabetico, ServicioRepuestos } from '../../services/servicio-repuestos.service';
 import { CAMPOS_CHILE } from '../../shared/campos-chile.directive';
 import { capitalizarPrimera } from '../../shared/formato-chile';
 
@@ -35,24 +37,27 @@ type Modal = 'repuesto' | 'entrada' | 'historial';
 @Component({
     standalone: true,
     selector: 'app-catalogo',
-    imports: [CommonModule, FormsModule, ...CAMPOS_CHILE],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, ...CAMPOS_CHILE],
     templateUrl: './catalogo.component.html',
     styleUrl: '../shared/mantenedor.css',
 })
 export class CatalogoComponent implements OnInit {
     private readonly servicio = inject(ServicioRepuestos);
     private readonly authService = inject(AuthService);
+    private readonly destroyRef = inject(DestroyRef);
+    private readonly recargar$ = new Subject<void>();
 
     readonly unidades = UNIDADES_MEDIDA;
     readonly etiquetaUnidad = ETIQUETA_UNIDAD_MEDIDA;
     readonly etiquetaMovimiento = ETIQUETA_TIPO_MOVIMIENTO;
+    readonly searchControl = new FormControl('', { nonNullable: true });
 
     repuestos: Repuesto[] = [];
     cargando = false;
     guardando = false;
     mensajeError = '';
     mensajeExito = '';
-    terminoBusqueda = '';
+    currentSort: OrdenAlfabetico = 'asc';
     soloBajoStock = false;
 
     modal: Modal | null = null;
@@ -64,6 +69,35 @@ export class CatalogoComponent implements OnInit {
     cargandoMovimientos = false;
 
     ngOnInit(): void {
+        this.recargar$.pipe(
+            tap(() => {
+                this.cargando = true;
+            }),
+            switchMap(() =>
+                this.servicio.listar(false, this.soloBajoStock, this.searchControl.value, this.currentSort).pipe(
+                    tap(() => {
+                        this.mensajeError = '';
+                    }),
+                    catchError((err) => {
+                        this.mensajeError = mensajeDeError(err, 'cargar el catálogo de repuestos');
+                        return of([] as Repuesto[]);
+                    }),
+                ),
+            ),
+            takeUntilDestroyed(this.destroyRef),
+        ).subscribe((repuestos) => {
+            this.repuestos = repuestos;
+            this.cargando = false;
+        });
+
+        this.searchControl.valueChanges.pipe(
+            debounceTime(350),
+            distinctUntilChanged(),
+            takeUntilDestroyed(this.destroyRef),
+        ).subscribe(() => {
+            this.cargar();
+        });
+
         this.cargar();
     }
 
@@ -72,12 +106,8 @@ export class CatalogoComponent implements OnInit {
         return hasRoleAccess(this.authService.currentUser()?.role, ['ADMIN']);
     }
 
-    get repuestosFiltrados(): Repuesto[] {
-        const termino = this.terminoBusqueda.trim().toLowerCase();
-        return this.repuestos.filter((r) =>
-            (!this.soloBajoStock || r.bajoStockMinimo)
-            && (!termino || [r.codigo, r.nombre, r.descripcion].some((campo) => campo?.toLowerCase().includes(termino))),
-        );
+    get hayFiltrosActivos(): boolean {
+        return Boolean(this.searchControl.value.trim()) || this.soloBajoStock;
     }
 
     get cantidadBajoStock(): number {
@@ -85,18 +115,15 @@ export class CatalogoComponent implements OnInit {
     }
 
     cargar(): void {
-        this.cargando = true;
-        this.servicio.listar().subscribe({
-            next: (repuestos) => {
-                this.repuestos = repuestos;
-                this.cargando = false;
-            },
-            error: (err) => {
-                this.repuestos = [];
-                this.mensajeError = mensajeDeError(err, 'cargar el catálogo de repuestos');
-                this.cargando = false;
-            },
-        });
+        this.recargar$.next();
+    }
+
+    cambiarOrden(direccion: OrdenAlfabetico): void {
+        if (this.currentSort === direccion) {
+            return;
+        }
+        this.currentSort = direccion;
+        this.cargar();
     }
 
     abrirCreacion(): void {
