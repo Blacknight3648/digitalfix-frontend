@@ -1,4 +1,39 @@
 <div class="login-page">
+    <!-- Panel Sistema Caído (overlay completo sobre el formulario) -->
+    <div *ngIf="backendCaido()" class="sistema-caido-overlay" role="alert" aria-live="assertive">
+        <div class="sistema-caido-panel">
+            <span class="material-icons sistema-caido-icon">cloud_off</span>
+            <h2 class="sistema-caido-titulo">Sistema temporalmente no disponible</h2>
+            <p class="sistema-caido-desc">
+                El servidor está caído o no responde. Por favor espera unos minutos
+                o envía una alerta al equipo de soporte.
+            </p>
+            <div class="sistema-caido-acciones">
+                <button
+                    class="btn-sistema-caido"
+                    (click)="reportarSistemaCaido()"
+                    [disabled]="alertaEnviada || enviandoAlerta"
+                >
+                    <span class="material-icons">{{ alertaEnviada ? 'check_circle' : 'report_problem' }}</span>
+                    <span>{{ alertaEnviada ? 'Alerta enviada' : 'Notificar a soporte' }}</span>
+                </button>
+                <button
+                    class="btn-reintentar"
+                    (click)="reintentarConexion()"
+                    [disabled]="isRedirecting"
+                >
+                    <span *ngIf="isRedirecting" class="spinner" aria-hidden="true"></span>
+                    <span class="material-icons" *ngIf="!isRedirecting">refresh</span>
+                    <span>{{ isRedirecting ? 'Verificando...' : 'Reintentar conexión' }}</span>
+                </button>
+            </div>
+            <p *ngIf="alertaEnviada" class="sistema-caido-confirmacion">
+                <span class="material-icons" style="font-size:16px;vertical-align:middle">check</span>
+                Se abrió tu cliente de correo con el mensaje prellenado.
+            </p>
+        </div>
+    </div>
+
     <!-- Tarjeta Principal Dividida -->
     <main class="login-card-container">
         <!-- LADO IZQUIERDO: ILUSTRACIÓN TECNOLÓGICA & SEGURIDAD -->

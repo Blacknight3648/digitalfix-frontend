@@ -16,8 +16,10 @@ const DEFAULT_ROLE: AppRole = 'CLIENTE';
 // y MsalInterceptor obtiene el access token en silencio desde el primer request.
 const LOGIN_SCOPES = environment.azure.protectedResourceScopes;
 const LOGOUT_NOTIFY_TIMEOUT_MS = 3000;
-const SESSION_ATTEMPTS = 3;
-const SESSION_RETRY_DELAY_MS = 1500;
+const SESSION_ATTEMPTS = 5;
+const SESSION_RETRY_DELAY_MS = 2000;
+// Señal pública: true si el backend no responde después de todos los reintentos.
+export const backendCaido = signal<boolean>(false);
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -67,6 +69,7 @@ export class AuthService {
         this.syncFromActiveAccount();
         this.sessionRequest ??= this.fetchSession()
             .then((session) => {
+                backendCaido.set(false);
                 const user = this.currentUser();
                 if (user) {
                     const assignedRole = this.resolveRole(session.roles, user.assignedRole);
@@ -78,9 +81,17 @@ export class AuthService {
             })
             .catch((err) => {
                 console.warn('[Auth] No se pudo obtener la sesión desde ms-login:', err);
+                backendCaido.set(true);
                 this.sessionRequest = null;
             });
         return this.sessionRequest;
+    }
+
+    // Permite reintentar la conexión desde la pantalla de sistema caído.
+    reintentarConexion(): Promise<void> {
+        backendCaido.set(false);
+        this.sessionRequest = null;
+        return this.loadSession();
     }
 
     // Reintenta mientras la respuesta venga incompleta: justo después de

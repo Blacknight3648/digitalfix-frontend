@@ -25,50 +25,26 @@ class ReplaceHistoryNavigationClient extends NavigationClient {
   }
 }
 
-// MSAL guarda en sessionStorage (claves "msal.") el state y el estado de cada
-// redirect en curso. Si un login queda a medias (botón atrás, otra pestaña,
-// redirect viejo), ese state ya no coincide con la respuesta de Microsoft y
-// el siguiente intento falla con state_mismatch o interaction_in_progress.
+// MSAL guarda en sessionStorage o localStorage el state y el estado de cada
+// redirect en curso. Si un login queda a medias (botón atrás, otra pestaña),
+// se puede limpiar el estado temporal.
 export function clearMsalTemporaryState(): void {
-  if (typeof sessionStorage === 'undefined') {
-    return;
+  if (typeof sessionStorage !== 'undefined') {
+    Object.keys(sessionStorage)
+      .filter((key) => key.startsWith('msal.'))
+      .forEach((key) => sessionStorage.removeItem(key));
   }
-  Object.keys(sessionStorage)
-    .filter((key) => key.startsWith('msal.'))
-    .forEach((key) => sessionStorage.removeItem(key));
-}
-
-function stripAuthResponseFromUrl(): void {
-  history.replaceState(null, '', window.location.pathname + window.location.search);
-}
-
-/**
- * Una URL con #...state=... que no corresponde al login iniciado en esta
- * pestaña: típicamente una URL vieja que el navegador autocompletó desde el
- * historial, o la respuesta de un intento anterior. Si se le entrega a MSAL
- * termina en state_mismatch; se descarta antes para partir desde un punto limpio.
- */
-function isStaleAuthResponse(): boolean {
-  const returnedState = new URLSearchParams(window.location.hash.slice(1)).get('state');
-  if (!returnedState) {
-    return false;
-  }
-  // request.params es el request que MSAL guardó al llamar a loginRedirect
-  // (JSON en base64); su "state" es el que Microsoft debe devolver.
-  const requestKey = Object.keys(sessionStorage).find((key) => key.endsWith('.request.params'));
-  const requestJson = requestKey ? sessionStorage.getItem(requestKey) : null;
-  try {
-    return !requestJson || JSON.parse(atob(requestJson)).state !== returnedState;
-  } catch {
-    return true;
+  if (typeof localStorage !== 'undefined') {
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith('msal.') && (key.includes('interaction') || key.includes('request')))
+      .forEach((key) => localStorage.removeItem(key));
   }
 }
 
 /**
  * Procesa el regreso desde Microsoft una sola vez y antes de que arranque
  * Angular, para que el router, los guards y los componentes nunca vean la URL
- * con #code=... ni intenten procesarla de nuevo. Cualquier respuesta vieja o
- * fallida deja la sesión local limpia, lista para un nuevo login.
+ * con #code=... ni intenten procesarla de nuevo.
  * Devuelve el código de error a mostrar en el login, o null.
  */
 export async function prepareAuth(msal: IPublicClientApplication): Promise<string | null> {
@@ -84,12 +60,6 @@ export async function prepareAuth(msal: IPublicClientApplication): Promise<strin
     }
   });
 
-  if (isStaleAuthResponse()) {
-    console.warn('[MSAL] Se descartó una respuesta de login que no corresponde a esta pestaña.');
-    clearMsalTemporaryState();
-    stripAuthResponseFromUrl();
-  }
-
   let redirectError: string | null = null;
   try {
     const result = await msal.handleRedirectPromise();
@@ -100,7 +70,6 @@ export async function prepareAuth(msal: IPublicClientApplication): Promise<strin
     console.error('[MSAL] Error al procesar el regreso desde Microsoft:', err);
     redirectError = (err as { errorCode?: string })?.errorCode ?? 'unknown_error';
     clearMsalTemporaryState();
-    stripAuthResponseFromUrl();
   }
 
   if (!msal.getActiveAccount()) {

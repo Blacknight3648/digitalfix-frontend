@@ -68,24 +68,21 @@
   </style>
   <script>
     // Se muestra solo donde se renderiza el login ('/' y '/login') y solo si
-    // se vuelve desde Microsoft (#code=... / #error=...) o ya hay una cuenta
-    // de MSAL en caché (msal.<versión>.account.keys), porque en ambos casos
-    // el login va a redirigir a home en vez de mostrar el formulario.
+    // se vuelve desde Microsoft (code/error) o ya hay una cuenta
+    // de MSAL en caché, evitando que se vea el formulario parpadear antes de entrar.
     (function () {
       try {
         var ruta = window.location.pathname.replace(/\/+$/, '');
         if (ruta !== '' && ruta !== '/login') return;
-        var hash = window.location.hash;
-        var vuelveDeMicrosoft = /[#&](code|error)=/.test(hash);
+        var fullUrl = window.location.search + window.location.hash;
+        var vuelveDeMicrosoft = /[?#&](code|error)=/.test(fullUrl);
         var haySesion = Object.keys(localStorage).some(function (clave) {
-          if (clave.indexOf('msal.') !== 0 || !/account\.keys$/.test(clave)) return false;
-          var cuentas = JSON.parse(localStorage.getItem(clave) || '[]');
-          return Array.isArray(cuentas) && cuentas.length > 0;
+          return clave.indexOf('msal.') === 0 && (clave.indexOf('account') !== -1 || clave.indexOf('idtoken') !== -1);
         });
         if (!vuelveDeMicrosoft && !haySesion) return;
         document.documentElement.classList.add('df-cargando');
         // Respaldo: si Angular no arranca, no dejar la pantalla tapada.
-        setTimeout(function () { document.documentElement.classList.remove('df-cargando'); }, 20000);
+        setTimeout(function () { document.documentElement.classList.remove('df-cargando'); }, 15000);
       } catch (e) {}
     })();
   </script>
