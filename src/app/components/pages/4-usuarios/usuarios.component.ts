@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -9,6 +9,9 @@ import { ServicioUsuarios } from '@remote/service/usuarios/servicio-usuarios.ser
 import { CAMPOS_CHILE } from '@components/ui/directives/campos-chile.directive';
 import { capitalizarNombre, capitalizarPrimera } from '@utils/formato-chile';
 import { TelefonoPipe } from '@components/ui/pipes/telefono.pipe';
+import { PAGINACION } from '@components/ui/paginador';
+import { NotificacionesService } from '@components/ui/notificaciones/notificaciones.service';
+import { ConfirmacionService } from '@components/ui/confirmacion/confirmacion.service';
 
 const FORMULARIO_VACIO: UsuarioPeticion = {
     email: '',
@@ -26,12 +29,15 @@ const FORMULARIO_VACIO: UsuarioPeticion = {
 @Component({
     standalone: true,
     selector: 'app-usuarios',
-    imports: [CommonModule, FormsModule, ...CAMPOS_CHILE, TelefonoPipe],
+    imports: [CommonModule, FormsModule, ...CAMPOS_CHILE, TelefonoPipe, ...PAGINACION],
     templateUrl: './usuarios.component.html',
 })
 export class UsuariosComponent implements OnInit {
     private readonly servicio = inject(ServicioUsuarios);
     private readonly authService = inject(AuthService);
+    private readonly notificaciones = inject(NotificacionesService);
+    private readonly confirmacion = inject(ConfirmacionService);
+    readonly filasFantasma = [1, 2, 3, 4, 5];
 
     usuarios: UsuarioSistema[] = [];
     roles: RolSistema[] = [];
@@ -44,9 +50,10 @@ export class UsuariosComponent implements OnInit {
     cargando = false;
     guardando = false;
     mensajeError = '';
-    mensajeExito = '';
     terminoBusqueda = '';
     filtroRol = '';
+    pagina = 1;
+    tamano = 10;
 
     modalAbierto = false;
     // null = creando; con id = editando ese usuario.
@@ -75,8 +82,15 @@ export class UsuariosComponent implements OnInit {
         return usuario.email.toLowerCase() === this.authService.currentUser()?.email?.toLowerCase();
     }
 
+    iniciales(usuario: UsuarioSistema): string {
+        return `${usuario.nombre?.[0] ?? ''}${usuario.apellido?.[0] ?? ''}`.toUpperCase();
+    }
+
     cargar(): void {
         this.cargando = true;
+        if (!this.modalAbierto) {
+            this.mensajeError = '';
+        }
         forkJoin({
             usuarios: this.servicio.listar(),
             roles: this.servicio.listarRoles(),
@@ -148,9 +162,9 @@ export class UsuariosComponent implements OnInit {
             next: (usuario) => {
                 this.guardando = false;
                 this.modalAbierto = false;
-                this.mensajeExito = editando
+                this.notificaciones.exito(editando
                     ? `Usuario ${usuario.email} actualizado. Si cambió el rol, se aplica en su próxima sesión (máx. 5 min).`
-                    : `Usuario ${usuario.email} creado como ${usuario.nombreRol}. Podrá entrar con su cuenta Microsoft de ese correo.`;
+                    : `Usuario ${usuario.email} creado como ${usuario.nombreRol}. Podrá entrar con su cuenta Microsoft de ese correo.`);
                 this.cargar();
             },
             error: (err) => {
@@ -189,22 +203,33 @@ export class UsuariosComponent implements OnInit {
         });
     }
 
-    darDeBaja(usuario: UsuarioSistema): void {
-        if (!confirm(`¿Dar de baja a ${usuario.nombre} ${usuario.apellido}? Ya no podrá iniciar sesión.`)) {
+    async darDeBaja(usuario: UsuarioSistema): Promise<void> {
+        const confirmada = await this.confirmacion.preguntar({
+            titulo: `¿Dar de baja a ${usuario.nombre} ${usuario.apellido}?`,
+            mensaje: `${usuario.email} ya no podrá iniciar sesión en DigitalFix.`,
+            confirmar: 'Dar de baja',
+            peligro: true,
+        });
+        if (!confirmada) {
             return;
         }
-        this.limpiarMensajes();
         this.servicio.darDeBaja(usuario.id).subscribe({
             next: () => {
-                this.mensajeExito = `Usuario ${usuario.email} dado de baja.`;
+                this.notificaciones.exito(`Usuario ${usuario.email} dado de baja.`);
                 this.cargar();
             },
-            error: (err) => (this.mensajeError = mensajeDeError(err, 'dar de baja al usuario')),
+            error: (err) => this.notificaciones.error(mensajeDeError(err, 'dar de baja al usuario')),
         });
     }
 
     limpiarMensajes(): void {
         this.mensajeError = '';
-        this.mensajeExito = '';
+    }
+
+    @HostListener('document:keydown.escape')
+    cerrarConEscape(): void {
+        if (!this.confirmacion.actual()) {
+            this.cerrarModal();
+        }
     }
 }

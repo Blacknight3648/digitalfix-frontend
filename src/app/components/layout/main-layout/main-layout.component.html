@@ -4,8 +4,12 @@
   <div class="menu-fondo" (click)="menu.cerrar()" aria-hidden="true"></div>
   <div class="content-wrapper">
     <app-topbar />
-    <main class="content-body">
+    <main class="content-body" id="contenido">
       <router-outlet />
     </main>
   </div>
 </div>
+
+<!-- Avisos flotantes y confirmaciones de toda la app (components/ui) -->
+<app-notificaciones />
+<app-confirmacion />

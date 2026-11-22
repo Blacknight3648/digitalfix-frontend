@@ -1,26 +1,117 @@
 // ============================================================================
-// Tokens de diseño: única fuente de colores de DigitalFix.
-// Los componentes usan siempre var(--token); nunca un color literal repetido.
+// Tokens de diseño: única fuente de los parámetros visuales de DigitalFix.
+// Los componentes usan siempre var(--token); nunca un valor literal repetido.
+//
+//   Color      marca, superficies, texto, semánticos y estados de la orden
+//   Tipografía familia, escala de tamaños y pesos
+//   Espaciado  escala de 4 px
+//   Forma      radios y sombras
+//   Movimiento duraciones y curvas
+//   Capas      z-index
+//
+// Puntos de quiebre (no pueden ser variables CSS dentro de @media):
+//   ≤ 640px   teléfono: tablas como tarjetas, modales como hoja inferior
+//   ≤ 880px   tablet vertical: el menú es un panel deslizable
+//   ≤ 1199px  tablet horizontal / laptop chica: el menú es un riel de íconos
+//
+// Los tokens heredados (--negro, --gris-fondo, --borde, --asignada-fg...) los usa
+// también el login: no cambiar sus valores sin revisar esa pantalla.
 // ============================================================================
 :root {
-  --negro: #000000;
-  --gris-fondo: #f4f5f9;
-  --gris-suave: #f1f2f6;
-  --blanco: #ffffff;
-  --texto: #1a1a1a;
-  --texto-tenue: #9a9a9a;
-  /* Acento de marca: ítem activo del menú, logo y avatar. */
-  --primario: #4f46e5;
-  --primario-suave: #eef0ff;
-  /* Texto secundario sobre fondo blanco (labels, metadata): #4b5563 da ~7.5:1
-     de contraste, muy por sobre el mínimo AA de 4.5:1 para texto normal. */
-  --texto-secundario: #4b5563;
-  --borde: #e6e6e6;
+  /* ---------- Marca ---------- */
+  --primario: #2563eb;
+  --primario-hover: #1d4ed8;
+  --primario-activo: #1e40af;
+  --primario-suave: #eff4ff;
+  --primario-borde: #c7d7fe;
+  --primario-texto: #ffffff;
 
-  --creada-bg: #ececec;   --creada-fg: #555555;
-  --asignada-bg: #e3edff; --asignada-fg: #1d4ed8;
-  --desplazo-bg: #fff2d9; --desplazo-fg: #92600a;
+  /* ---------- Superficies y texto ---------- */
+  --negro: #000000;
+  --blanco: #ffffff;
+  --gris-fondo: #f4f5f9;          /* fondo de la app */
+  --gris-suave: #f1f2f6;          /* hover de ítems */
+  --superficie: #ffffff;          /* paneles */
+  --superficie-2: #f8fafc;        /* cabecera de tabla, campos, bloques internos */
+  --borde: #e6e6e6;
+  --borde-fuerte: #d1d5db;        /* borde de controles */
+  --texto: #1a1a1a;
+  /* #4b5563 sobre blanco da ~7.5:1, sobre el mínimo AA (4.5:1) */
+  --texto-secundario: #4b5563;
+  --texto-tenue: #9a9a9a;
+
+  /* ---------- Semánticos ---------- */
+  --exito: #15803d;    --exito-suave: #e7f6ec;   --exito-borde: #b7e1c4;
+  --aviso: #b45309;    --aviso-suave: #fff4e0;   --aviso-borde: #fcd9a4;
+  --peligro: #b42318;  --peligro-suave: #fdecec; --peligro-borde: #f8c9c5;
+  --info: #0e7490;     --info-suave: #e3f6fa;    --info-borde: #a9e1ec;
+
+  /* ---------- Estados de la orden de trabajo ---------- */
+  --creada-bg: #ececec;    --creada-fg: #555555;
+  --asignada-bg: #e3edff;  --asignada-fg: #1d4ed8;
+  --desplazo-bg: #fff2d9;  --desplazo-fg: #92600a;
   --ejecucion-bg: #efe3ff; --ejecucion-fg: #6b21a8;
-  --cerrada-bg: #dff5e6;  --cerrada-fg: #1a7f37;
+  --cerrada-bg: #dff5e6;   --cerrada-fg: #1a7f37;
   --cancelada-bg: #fde3e3; --cancelada-fg: #b42318;
+
+  /* ---------- Tipografía ---------- */
+  --fuente: "Inter", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --fs-2xs: 11px;   /* encabezados de tabla, etiquetas en mayúscula */
+  --fs-xs: 12px;    /* ayudas, metadatos */
+  --fs-sm: 13px;    /* tablas, controles */
+  --fs-base: 14px;  /* texto general */
+  --fs-md: 16px;    /* títulos de modal; inputs en teléfono (evita el zoom de iOS) */
+  --fs-lg: 20px;    /* números destacados */
+  --fs-xl: 24px;    /* título de página */
+  --fw-normal: 400;
+  --fw-medio: 500;
+  --fw-semi: 600;
+  --fw-bold: 700;
+
+  /* ---------- Espaciado (escala de 4 px) ---------- */
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-5: 20px;
+  --esp-6: 24px;
+  --esp-8: 32px;
+  --esp-10: 40px;
+  /* Margen lateral del contenido: 16 px en teléfono, hasta 32 px en escritorio */
+  --gutter: clamp(16px, 2.6vw, 32px);
+
+  /* ---------- Controles ---------- */
+  --alto-control: 38px;       /* botones, inputs y selects */
+  --alto-control-sm: 32px;    /* botones de acción de fila */
+  --alto-tactil: 44px;        /* mínimo en pantallas táctiles */
+
+  /* ---------- Forma ---------- */
+  --radio-sm: 6px;
+  --radio: 8px;
+  --radio-md: 10px;
+  --radio-lg: 14px;
+  --radio-pill: 999px;
+  --sombra-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --sombra: 0 1px 3px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --sombra-md: 0 6px 16px -4px rgba(16, 24, 40, 0.12), 0 2px 4px -2px rgba(16, 24, 40, 0.06);
+  --sombra-lg: 0 20px 40px -12px rgba(16, 24, 40, 0.28);
+  --anillo-foco: 0 0 0 3px rgba(37, 99, 235, 0.28);
+
+  /* ---------- Movimiento ---------- */
+  --dur-rapida: 120ms;
+  --dur: 180ms;
+  --dur-lenta: 260ms;
+  --curva: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* ---------- Capas ---------- */
+  --z-topbar: 40;
+  --z-menu: 60;
+  --z-modal: 80;
+  --z-confirmacion: 90;
+  --z-toast: 100;
+
+  /* ---------- Layout ---------- */
+  --ancho-menu: 248px;
+  --ancho-riel: 72px;
+  --alto-topbar: 64px;
 }

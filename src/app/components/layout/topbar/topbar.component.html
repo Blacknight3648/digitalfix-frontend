@@ -1,4 +1,4 @@
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-title">
     <!-- Solo en pantallas angostas (≤ 880px), donde el menú es un panel deslizable -->
     <button
@@ -11,49 +11,38 @@
     >
       <span class="material-icons">menu</span>
     </button>
-    <span class="breadcrumb">DigitalFix</span>
-    <span class="material-icons breadcrumb-sep">chevron_right</span>
-    <span class="current-page">{{ pageTitle() }}</span>
+    <nav class="breadcrumb" aria-label="Ubicación">
+      <span class="breadcrumb-root">DigitalFix</span>
+      <span class="material-icons breadcrumb-sep" aria-hidden="true">chevron_right</span>
+      <span class="current-page" aria-current="page">{{ pageTitle() }}</span>
+    </nav>
   </div>
 
   <div class="topbar-actions">
     @if (canSwitchRole) {
-    <select
-      class="role-select"
-      title="Ver la app con las vistas de otro rol (solo Superadmin)"
-      [ngModel]="currentRole"
-      (ngModelChange)="onRoleChange($event)"
-    >
-      @for (role of roles; track role) {
-        <option [value]="role">Ver como {{ roleLabel[role] }}</option>
-      }
-    </select>
+      <label class="role-switch" title="Ver la app con las vistas de otro rol (solo Superadmin)">
+        <span class="material-icons" aria-hidden="true">visibility</span>
+        <select class="role-select" [ngModel]="currentRole" (ngModelChange)="onRoleChange($event)" aria-label="Ver la app como otro rol">
+          @for (role of roles; track role) {
+            <option [value]="role">Ver como {{ roleLabel[role] }}</option>
+          }
+        </select>
+      </label>
     }
-
-    <div class="icons">
-      <button class="icon-btn" type="button" title="Notificaciones">
-        <span class="material-icons">notifications_none</span>
-      </button>
-      <button class="icon-btn" type="button" title="Soporte técnico">
-        <span class="material-icons">support_agent</span>
-      </button>
-    </div>
-
-    <div class="divider"></div>
 
     @if (currentUser) {
-    <div class="user-chip" [title]="currentUser.name + ' · ' + currentUser.email">
-      <div class="user-text">
-        <span class="user-name">{{ displayName }}</span>
-        <span class="user-role">{{ roleLabel[currentUser.role] }}</span>
+      <div class="user-chip" [title]="currentUser.name + ' · ' + currentUser.email">
+        <span class="avatar" aria-hidden="true">{{ initials }}</span>
+        <div class="user-text">
+          <span class="user-name">{{ displayName }}</span>
+          <span class="user-role">{{ roleLabel[currentUser.role] }}</span>
+        </div>
       </div>
-      <span class="avatar">{{ initials }}</span>
-    </div>
     }
 
-    <button class="btn-logout" type="button" title="Cerrar sesión" (click)="onLogout()">
+    <button class="btn-logout" type="button" (click)="onLogout()" aria-label="Cerrar sesión" title="Cerrar sesión">
       <span class="material-icons">logout</span>
       <span class="logout-label">Salir</span>
     </button>
   </div>
-</div>
+</header>

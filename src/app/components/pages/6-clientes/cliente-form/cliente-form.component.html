@@ -1,16 +1,16 @@
-<div class="card">
-  <div class="card-header">
-    <div>
-      <a routerLink="/clientes" class="back-link">
-        <span class="material-icons">arrow_back</span> Volver a clientes
-      </a>
-      <h2>{{ idEditando === null ? 'Nuevo cliente' : 'Editar cliente' }}</h2>
-      <p>Los campos con * son obligatorios. La dirección es donde se presta el servicio o se entrega el repuesto.</p>
-    </div>
+<header class="page-head">
+  <div class="page-head-text">
+    <a routerLink="/clientes" class="back-link">
+      <span class="material-icons">arrow_back</span> Volver a clientes
+    </a>
+    <h1>{{ idEditando === null ? 'Nuevo cliente' : 'Editar cliente' }}</h1>
+    <p>Los campos con * son obligatorios. La dirección es donde se presta el servicio o se entrega el repuesto.</p>
   </div>
+</header>
 
+<section class="panel">
   @if (mensajeError) {
-    <div class="alert alert-danger">
+    <div class="alert alert-danger" role="alert">
       <span class="material-icons">error_outline</span>
       <span>{{ mensajeError }}</span>
       <button type="button" class="btn-close-alert" (click)="mensajeError = ''">×</button>
@@ -18,9 +18,12 @@
   }
 
   @if (cargando) {
-    <div class="loading-cell">
-      <div class="spinner-small"></div>
-      <span>Cargando el cliente...</span>
+    <div class="form-cargando" aria-busy="true" aria-label="Cargando el cliente">
+      <span class="skeleton w-30"></span>
+      <span class="skeleton w-90"></span>
+      <span class="skeleton w-70"></span>
+      <span class="skeleton w-90"></span>
+      <span class="skeleton w-50"></span>
     </div>
   } @else {
     <form class="page-form" #form="ngForm" (ngSubmit)="guardar()">
@@ -92,4 +95,4 @@
       </div>
     </form>
   }
-</div>
+</section>

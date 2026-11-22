@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
@@ -14,11 +14,14 @@ import { Repuesto } from '@remote/dto/repuesto.dto';
 import { Proveedor } from '@remote/dto/directorio.dto';
 import { ServicioRepuestos } from '@remote/service/catalogo/servicio-repuestos.service';
 import { ServicioProveedores } from '@remote/service/directorio/servicio-proveedores.service';
+import { PAGINACION } from '@components/ui/paginador';
+import { NotificacionesService } from '@components/ui/notificaciones/notificaciones.service';
+import { ConfirmacionService } from '@components/ui/confirmacion/confirmacion.service';
 
 @Component({
     standalone: true,
     selector: 'app-home',
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, ...PAGINACION],
     templateUrl: './home.component.html',
     styleUrl: './home.component.css',
 })
@@ -28,6 +31,8 @@ export class HomeComponent implements OnInit {
     private readonly catalogo = inject(ServicioCatalogoServicios);
     private readonly servicioRepuestos = inject(ServicioRepuestos);
     private readonly servicioProveedores = inject(ServicioProveedores);
+    private readonly notificaciones = inject(NotificacionesService);
+    private readonly confirmacion = inject(ConfirmacionService);
 
     readonly estadosDisponibles: EstadoOrden[] = [
         'CREADA',
@@ -40,24 +45,29 @@ export class HomeComponent implements OnInit {
     readonly etiquetaRol = APP_ROLE_LABEL;
     readonly etiquetaEstado = ETIQUETA_ESTADO_ORDEN;
     readonly claseCssEstado = CLASE_CSS_ESTADO_ORDEN;
+    readonly flujo = FLUJO_ESTADOS_ORDEN;
+    readonly filasFantasma = [1, 2, 3, 4, 5];
 
-    // Estado de la vista
+    // Estado de la vista. mensajeError es solo el fallo de carga de la lista; el resultado
+    // de las acciones se avisa con notificaciones flotantes.
     ordenes: OrdenTrabajo[] = [];
     cargando = false;
     procesandoAccion = false;
     mensajeError = '';
-    mensajeExito = '';
 
-    // Filtros
+    // Filtros y paginación
     terminoBusqueda = '';
     filtroEstado: EstadoOrden | '' = '';
     fechaDesde = '';
     fechaHasta = '';
+    pagina = 1;
+    tamano = 10;
 
     // Modales
     ordenSeleccionada: OrdenTrabajo | null = null;
     modalCreacionAbierto = false;
     guardandoOrden = false;
+    mensajeErrorCreacion = '';
     clientesDisponibles: ClienteResumen[] = [];
     // Servicios activos del catálogo: lo único que se puede elegir al crear una orden.
     serviciosCatalogo: ServicioCatalogo[] = [];
@@ -82,7 +92,6 @@ export class HomeComponent implements OnInit {
     };
     operandoDetalle = false;
     mensajeErrorDetalle = '';
-    mensajeExitoDetalle = '';
 
     constructor() {
         this.authService.syncFromActiveAccount();
@@ -125,6 +134,50 @@ export class HomeComponent implements OnInit {
 
             return coincideTermino && coincideEstado && coincideDesde && coincideHasta;
         });
+    }
+
+    /** Cantidad de órdenes por estado, para los chips de filtro rápido. */
+    get conteoPorEstado(): Record<EstadoOrden, number> {
+        const conteo = Object.fromEntries(this.estadosDisponibles.map((e) => [e, 0])) as Record<EstadoOrden, number>;
+        for (const orden of this.ordenes) {
+            conteo[orden.estado] = (conteo[orden.estado] ?? 0) + 1;
+        }
+        return conteo;
+    }
+
+    get hayFiltros(): boolean {
+        return !!(this.terminoBusqueda || this.filtroEstado || this.fechaDesde || this.fechaHasta);
+    }
+
+    filtrarEstado(estado: EstadoOrden | ''): void {
+        this.filtroEstado = estado;
+        this.pagina = 1;
+    }
+
+    limpiarFiltros(): void {
+        this.terminoBusqueda = '';
+        this.filtroEstado = '';
+        this.fechaDesde = '';
+        this.fechaHasta = '';
+        this.pagina = 1;
+    }
+
+    /** Posición del estado en el flujo (para la barra de avance del detalle). */
+    indiceEstado(orden: OrdenTrabajo): number {
+        return FLUJO_ESTADOS_ORDEN.indexOf(orden.estado);
+    }
+
+    // Escape cierra el modal abierto (salvo que haya una confirmación encima: esa se cierra primero).
+    @HostListener('document:keydown.escape')
+    cerrarConEscape(): void {
+        if (this.confirmacion.actual()) {
+            return;
+        }
+        if (this.ordenSeleccionada) {
+            this.cerrarModalDetalle();
+        } else if (this.modalCreacionAbierto) {
+            this.cerrarModalCreacion();
+        }
     }
 
     /**
@@ -228,18 +281,15 @@ export class HomeComponent implements OnInit {
 
         const nuevoEstado = FLUJO_ESTADOS_ORDEN[indice + 1];
         this.procesandoAccion = true;
-        this.limpiarMensajes();
 
         this.servicioOrdenes.cambiarEstado(orden.idOrdenTrabajo, nuevoEstado).subscribe({
             next: (ordenActualizada) => {
-                orden.estado = ordenActualizada.estado;
-                orden.cuadrilla = ordenActualizada.cuadrilla ?? orden.cuadrilla;
-                orden.fechaActualizacionEstado = ordenActualizada.fechaActualizacionEstado;
-                this.mensajeExito = `Orden #${orden.idOrdenTrabajo} actualizada a "${this.etiquetaEstado[nuevoEstado]}" exitosamente.`;
+                this.aplicarCambioEstado(orden.idOrdenTrabajo, ordenActualizada);
+                this.notificaciones.exito(`Orden #${orden.idOrdenTrabajo} pasó a "${this.etiquetaEstado[ordenActualizada.estado]}".`);
                 this.procesandoAccion = false;
             },
             error: (err) => {
-                this.mensajeError = mensajeDeError(err, 'cambiar el estado de la orden');
+                this.notificaciones.error(mensajeDeError(err, 'cambiar el estado de la orden'));
                 this.procesandoAccion = false;
             },
         });
@@ -248,30 +298,59 @@ export class HomeComponent implements OnInit {
     /**
      * Cancela una orden de trabajo (solo permitido en estado CREADA).
      */
-    cancelarOrden(orden: OrdenTrabajo): void {
-        if (!confirm(`¿Estás seguro de cancelar la orden #${orden.idOrdenTrabajo}?`)) {
+    async cancelarOrden(orden: OrdenTrabajo): Promise<void> {
+        const confirmada = await this.confirmacion.preguntar({
+            titulo: `¿Cancelar la orden #${orden.idOrdenTrabajo}?`,
+            mensaje: 'La orden quedará como cancelada y ya no se podrá asignar ni ejecutar.',
+            confirmar: 'Cancelar orden',
+            cancelar: 'Volver',
+            peligro: true,
+        });
+        if (!confirmada) {
             return;
         }
         this.procesandoAccion = true;
-        this.limpiarMensajes();
 
         this.servicioOrdenes.cambiarEstado(orden.idOrdenTrabajo, 'CANCELADA').subscribe({
             next: (ordenActualizada) => {
-                orden.estado = ordenActualizada.estado;
-                this.mensajeExito = `Orden #${orden.idOrdenTrabajo} cancelada correctamente.`;
+                this.aplicarCambioEstado(orden.idOrdenTrabajo, ordenActualizada);
+                this.notificaciones.exito(`Orden #${orden.idOrdenTrabajo} cancelada.`);
                 this.procesandoAccion = false;
             },
             error: (err) => {
-                this.mensajeError = 'No se pudo cancelar la orden de trabajo.';
+                this.notificaciones.error(mensajeDeError(err, 'cancelar la orden de trabajo'));
                 this.procesandoAccion = false;
             },
         });
     }
 
+    // Refleja un cambio de estado en la tabla y, si está abierta, en el detalle (que se
+    // vuelve a consultar para traer el historial con el nuevo evento).
+    private aplicarCambioEstado(id: number, actualizada: OrdenTrabajo): void {
+        const combinar = (o: OrdenTrabajo): OrdenTrabajo => ({
+            ...o,
+            estado: actualizada.estado,
+            cuadrilla: actualizada.cuadrilla ?? o.cuadrilla,
+            fechaActualizacionEstado: actualizada.fechaActualizacionEstado,
+        });
+        this.ordenes = this.ordenes.map((o) => (o.idOrdenTrabajo === id ? combinar(o) : o));
+        if (this.ordenSeleccionada?.idOrdenTrabajo === id) {
+            this.ordenSeleccionada = combinar(this.ordenSeleccionada);
+            this.servicioOrdenes.buscarPorId(id).subscribe({
+                next: (detalle) => {
+                    if (this.ordenSeleccionada?.idOrdenTrabajo === id) {
+                        this.ordenSeleccionada = detalle;
+                    }
+                },
+                error: () => {},
+            });
+        }
+    }
+
     // Modal de Creación de Orden
     abrirModalCreacion(): void {
         this.modalCreacionAbierto = true;
-        this.limpiarMensajes();
+        this.mensajeErrorCreacion = '';
         if (this.clientesDisponibles.length > 0 && !this.formularioNuevaOrden.idCliente) {
             this.formularioNuevaOrden.idCliente = this.clientesDisponibles[0].idCliente;
         }
@@ -287,12 +366,13 @@ export class HomeComponent implements OnInit {
     }
 
     guardarNuevaOrden(): void {
+        this.mensajeErrorCreacion = '';
         if (!this.formularioNuevaOrden.idCliente) {
-            this.mensajeError = 'Debes seleccionar un cliente válido.';
+            this.mensajeErrorCreacion = 'Debes seleccionar un cliente válido.';
             return;
         }
         if (!this.formularioNuevaOrden.idServicio) {
-            this.mensajeError = 'Debes seleccionar el servicio a realizar.';
+            this.mensajeErrorCreacion = 'Debes seleccionar el servicio a realizar.';
             return;
         }
 
@@ -306,13 +386,16 @@ export class HomeComponent implements OnInit {
 
         this.servicioOrdenes.crear(peticion).subscribe({
             next: (creada) => {
-                this.ordenes.unshift(creada);
-                this.mensajeExito = `¡Orden #${creada.idOrdenTrabajo} creada con éxito!`;
+                // Nueva lista (no unshift) para que la tabla y los contadores se recalculen.
+                this.ordenes = [creada, ...this.ordenes];
+                this.filtroEstado = '';
+                this.pagina = 1;
+                this.notificaciones.exito(`Orden #${creada.idOrdenTrabajo} creada.`);
                 this.guardandoOrden = false;
                 this.cerrarModalCreacion();
             },
             error: (err) => {
-                this.mensajeError = mensajeDeError(err, 'registrar la orden');
+                this.mensajeErrorCreacion = mensajeDeError(err, 'registrar la orden');
                 this.guardandoOrden = false;
             },
         });
@@ -322,7 +405,6 @@ export class HomeComponent implements OnInit {
     abrirDetalle(orden: OrdenTrabajo): void {
         this.ordenSeleccionada = orden;
         this.mensajeErrorDetalle = '';
-        this.mensajeExitoDetalle = '';
         if (this.puedeOperar()) {
             this.cargarDatosOperacion(orden);
         }
@@ -427,9 +509,15 @@ export class HomeComponent implements OnInit {
         );
     }
 
-    quitarRepuesto(orden: OrdenTrabajo, rep: RepuestoOrdenTrabajo): void {
+    async quitarRepuesto(orden: OrdenTrabajo, rep: RepuestoOrdenTrabajo): Promise<void> {
         const aviso = this.stockComprometido(orden) ? ' Las unidades vuelven al stock.' : '';
-        if (!confirm(`¿Quitar ${this.nombreRepuesto(rep)} de la orden #${orden.idOrdenTrabajo}?${aviso}`)) {
+        const confirmada = await this.confirmacion.preguntar({
+            titulo: '¿Quitar el repuesto?',
+            mensaje: `Se quita ${this.nombreRepuesto(rep)} de la orden #${orden.idOrdenTrabajo}.${aviso}`,
+            confirmar: 'Quitar',
+            peligro: true,
+        });
+        if (!confirmada) {
             return;
         }
         this.ejecutarEnDetalle(
@@ -449,13 +537,12 @@ export class HomeComponent implements OnInit {
     ): void {
         this.operandoDetalle = true;
         this.mensajeErrorDetalle = '';
-        this.mensajeExitoDetalle = '';
         solicitud.subscribe({
             next: (actualizada) => {
                 this.operandoDetalle = false;
                 this.ordenSeleccionada = actualizada;
                 this.ordenes = this.ordenes.map((o) => o.idOrdenTrabajo === actualizada.idOrdenTrabajo ? actualizada : o);
-                this.mensajeExitoDetalle = mensajeExito(actualizada);
+                this.notificaciones.exito(mensajeExito(actualizada));
                 alTerminar?.();
                 this.cargarDatosOperacion(actualizada);
             },
@@ -464,10 +551,5 @@ export class HomeComponent implements OnInit {
                 this.mensajeErrorDetalle = mensajeDeError(err, accion);
             },
         });
-    }
-
-    limpiarMensajes(): void {
-        this.mensajeError = '';
-        this.mensajeExito = '';
     }
 }

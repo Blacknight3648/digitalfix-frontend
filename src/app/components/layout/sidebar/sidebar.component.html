@@ -1,8 +1,8 @@
 <aside class="sidebar" id="menu-principal" aria-label="Menú principal">
   <div class="sidebar-brand">
-    <img class="brand-logo" src="/digitalfix-128.png" alt="" width="32" height="32" />
+    <img class="brand-logo" src="/digitalfix-128.png" alt="" width="34" height="34" />
     <div class="brand-text">
-      <span class="brand-name">DigitalFix</span>
+      <span class="brand-name">Digital<span>Fix</span></span>
       <span class="brand-sub">Órdenes de trabajo</span>
     </div>
     <button class="btn-cerrar-menu" type="button" (click)="menu.cerrar()" aria-label="Cerrar menú">
@@ -11,16 +11,19 @@
   </div>
 
   <nav class="nav-list">
-    <span class="nav-section">Menú</span>
-    @for (item of navItems; track item.path) {
-      <a class="nav-link" [routerLink]="['/', item.path]" routerLinkActive="selected" [title]="item.label">
-        <span class="material-icons" aria-hidden="true">{{ item.icon }}</span>
-        <span class="nav-label">{{ item.label }}</span>
-      </a>
+    @for (grupo of grupos; track grupo.seccion) {
+      <span class="nav-section">{{ grupo.seccion }}</span>
+      @for (item of grupo.items; track item.path) {
+        <a class="nav-link" [routerLink]="['/', item.path]" routerLinkActive="selected"
+          #rla="routerLinkActive" [attr.aria-current]="rla.isActive ? 'page' : null" [title]="item.label">
+          <span class="material-icons" aria-hidden="true">{{ item.icon }}</span>
+          <span class="nav-label">{{ item.label }}</span>
+        </a>
+      }
     }
   </nav>
 
   <div class="sidebar-spacer"></div>
 
-  <div class="sidebar-footer">Versión del sistema 0.1.1</div>
+  <div class="sidebar-footer">Versión del sistema 0.2.0</div>
 </aside>

@@ -1,13 +1,15 @@
+/* Tres formatos según el ancho:
+   ≥ 1200px  menú completo fijo a la izquierda
+   881–1199  riel de íconos (el contenido gana espacio para las tablas)
+   ≤ 880px   panel deslizable con fondo oscuro, se abre con ☰ */
 .app-shell {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-columns: var(--ancho-menu) minmax(0, 1fr);
   min-height: 100vh;
   min-height: 100dvh;
 }
 
-/* <app-sidebar> es el host real del grid, no el .sidebar de su plantilla:
-   sin esto no hereda la altura de la fila y deja el hueco blanco abajo
-   cuando el contenido de la derecha es más alto que 100vh. */
+/* <app-sidebar> es el host real del grid: sin esto no hereda la altura de la fila */
 app-sidebar {
   display: flex;
 }
@@ -15,16 +17,25 @@ app-sidebar {
 .content-wrapper {
   display: flex;
   flex-direction: column;
-  background: var(--gris-fondo);
   min-height: 100vh;
   min-height: 100dvh;
   min-width: 0;
+  background: var(--gris-fondo);
 }
 
 .content-body {
   flex: 1;
-  padding: clamp(16px, 2.6vw, 32px);
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: var(--esp-6) var(--gutter) var(--esp-10);
   min-width: 0;
+  animation: entrar-pagina var(--dur-lenta) var(--curva);
+}
+
+@keyframes entrar-pagina {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
 }
 
 .menu-fondo {
@@ -42,14 +53,12 @@ app-sidebar {
   }
 }
 
-/* Riel de íconos: el contenido gana 168px para que las tablas quepan sin scroll */
 @media (max-width: 1199px) {
   .app-shell {
-    grid-template-columns: 72px minmax(0, 1fr);
+    grid-template-columns: var(--ancho-riel) minmax(0, 1fr);
   }
 }
 
-/* Panel deslizable: el menú sale del flujo y el contenido usa todo el ancho */
 @media (max-width: 880px) {
   .app-shell {
     grid-template-columns: minmax(0, 1fr);
@@ -58,28 +67,29 @@ app-sidebar {
   app-sidebar {
     position: fixed;
     inset: 0 auto 0 0;
-    z-index: 60;
-    width: min(280px, 84vw);
+    z-index: var(--z-menu);
+    width: min(288px, 86vw);
     transform: translateX(-100%);
-    transition: transform 0.22s ease;
+    transition: transform var(--dur-lenta) var(--curva), visibility var(--dur-lenta);
     visibility: hidden;
   }
 
   .menu-abierto app-sidebar {
     transform: none;
     visibility: visible;
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.18);
+    box-shadow: var(--sombra-lg);
   }
 
   .menu-fondo {
     display: block;
     position: fixed;
     inset: 0;
-    z-index: 50;
+    z-index: calc(var(--z-menu) - 1);
     background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.22s ease;
+    transition: opacity var(--dur-lenta) var(--curva);
   }
 
   .menu-abierto .menu-fondo {
@@ -88,6 +98,8 @@ app-sidebar {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  app-sidebar, .menu-fondo { transition: none; }
+@media (max-width: 640px) {
+  .content-body {
+    padding: var(--esp-4) var(--esp-4) var(--esp-8);
+  }
 }

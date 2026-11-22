@@ -5,6 +5,8 @@ import { filter } from 'rxjs';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { TopbarComponent } from '../topbar/topbar.component';
 import { EstadoMenuService } from '../estado-menu.service';
+import { NotificacionesComponent } from '@components/ui/notificaciones/notificaciones.component';
+import { ConfirmacionComponent } from '@components/ui/confirmacion/confirmacion.component';
 
 // Shell compartido por todas las pantallas autenticadas del caso
 // (Dashboard, Órdenes de trabajo, Catálogo, Reportería, Auditoría).
@@ -13,7 +15,7 @@ import { EstadoMenuService } from '../estado-menu.service';
 @Component({
     standalone: true,
     selector: 'app-main-layout',
-    imports: [RouterOutlet, SidebarComponent, TopbarComponent],
+    imports: [RouterOutlet, SidebarComponent, TopbarComponent, NotificacionesComponent, ConfirmacionComponent],
     templateUrl: './main-layout.component.html',
     styleUrl: './main-layout.component.css',
 })
