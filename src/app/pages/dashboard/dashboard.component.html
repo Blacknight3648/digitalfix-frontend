@@ -1,0 +1,176 @@
+<div class="card">
+  @if (!puedeVerKpis) {
+    <div class="card-header">
+      <div>
+        <h2>Dashboard</h2>
+        <p>Vista actual según rol ({{ etiquetaRol[rolActual] }})</p>
+      </div>
+    </div>
+
+    <div class="role-notice">
+      <div class="role-notice-icon">
+        <span class="material-icons">lock_outline</span>
+      </div>
+      <h3>Panel operativo reservado para Supervisión y Administración</h3>
+      <p>
+        Las métricas en tiempo real de procesamiento, tiempos de resolución y despliegue de cuadrillas
+        están disponibles para los roles <strong>Supervisor</strong> y <strong>Admin</strong>.
+      </p>
+      <a class="btn-primary link-btn" [routerLink]="rutaAlternativaRol">
+        {{ etiquetaRutaAlternativaRol }}
+      </a>
+    </div>
+  } @else {
+    <div class="card-header">
+      <div>
+        <h2>Panel de operaciones en tiempo real</h2>
+        <p class="subtitle-row">
+          <span>Ventana: últimas 24 horas</span>
+          <span>·</span>
+          @if (ultimaActualizacion) {
+            <span>Actualizado a las {{ ultimaActualizacion | date:'HH:mm:ss' }}</span>
+          } @else {
+            <span>Esperando primera lectura…</span>
+          }
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <span class="live-pill" title="Actualización automática desde ms-report">
+          <span class="live-dot" aria-hidden="true"></span>
+          En vivo · {{ intervaloSegundos }}s
+        </span>
+        <button
+          class="btn-refresh"
+          type="button"
+          (click)="actualizarManual()"
+          [disabled]="cargando"
+          title="Actualizar métricas ahora"
+        >
+          <span class="material-icons" [class.rotating]="cargando">refresh</span>
+        </button>
+      </div>
+    </div>
+
+    @if (mensajeError) {
+      <div class="alert alert-danger" role="alert">
+        <span class="material-icons">error_outline</span>
+        <span>{{ mensajeError }}</span>
+        <button type="button" class="btn-secondary btn-retry" (click)="actualizarManual()" [disabled]="cargando">
+          Reintentar
+        </button>
+        <button type="button" class="btn-close-alert" (click)="limpiarError()" aria-label="Cerrar alerta">×</button>
+      </div>
+    }
+
+    @if (cargando && !kpis) {
+      <div class="loading-panel">
+        <div class="spinner-small"></div>
+        <span>Consultando KPIs en digitalfix-ms-report…</span>
+      </div>
+    } @else {
+      <!-- 3 Tarjetas métricas superiores destacadas -->
+      <section class="kpi-grid" aria-label="Indicadores operativos clave">
+        <article class="kpi-card kpi-card--primary">
+          <div class="kpi-top">
+            <span class="kpi-label">Órdenes por hora</span>
+            <span class="kpi-icon kpi-icon--primary">
+              <span class="material-icons" aria-hidden="true">speed</span>
+            </span>
+          </div>
+          <div class="kpi-value">
+            {{ kpis ? (kpis.ordersPerHour | number:'1.1-1') : '—' }}
+            <span class="kpi-unit">/ h</span>
+          </div>
+          <p class="kpi-meta">
+            {{ kpis ? (kpis.totalOrdersLast24h | number) : 0 }} órdenes procesadas en 24 h
+          </p>
+        </article>
+
+        <article class="kpi-card kpi-card--resolution">
+          <div class="kpi-top">
+            <span class="kpi-label">Tiempo promedio de resolución</span>
+            <span class="kpi-icon kpi-icon--resolution">
+              <span class="material-icons" aria-hidden="true">timer</span>
+            </span>
+          </div>
+          <div class="kpi-value">
+            {{ kpis ? tiempoResolucionFormateado : '—' }}
+          </div>
+          <p class="kpi-meta">
+            @if (kpis) {
+              {{ kpis.avgResolutionTimeMinutes | number:'1.1-1' }} min promedio (Creada → Cerrada)
+            } @else {
+              Ciclo completo desde creación hasta cierre
+            }
+          </p>
+        </article>
+
+        <article class="kpi-card kpi-card--active">
+          <div class="kpi-top">
+            <span class="kpi-label">Órdenes activas en operación</span>
+            <span class="kpi-icon kpi-icon--active">
+              <span class="material-icons" aria-hidden="true">engineering</span>
+            </span>
+          </div>
+          <div class="kpi-value">
+            {{ kpis ? (totalOrdenesActivas | number) : '—' }}
+          </div>
+          <p class="kpi-meta">
+            En curso entre creación, ruta y ejecución en terreno
+          </p>
+        </article>
+      </section>
+
+      <!-- Panel desglose de estados activos -->
+      <section class="status-panel" aria-label="Desglose de estados activos">
+        <div class="status-panel-header">
+          <div>
+            <h3>Desglose de estados activos</h3>
+            <p>Distribución en tiempo real de órdenes operativas y avance de cuadrillas en terreno</p>
+          </div>
+          <span class="total-active-chip">
+            Total activas: <strong>{{ totalOrdenesActivas | number }}</strong>
+          </span>
+        </div>
+
+        <div class="status-list">
+          @for (item of desgloseEstados; track item.estado) {
+            <div class="status-row">
+              <div class="status-row-head">
+                <div class="status-info">
+                  <span class="badge" [class]="item.claseCss">{{ item.etiqueta }}</span>
+                  <span class="status-desc">{{ item.descripcion }}</span>
+                </div>
+                <div class="status-numbers">
+                  <strong>{{ item.cantidad | number }}</strong>
+                  <span class="status-pct">{{ item.porcentaje }}%</span>
+                </div>
+              </div>
+              <div
+                class="progress-track"
+                role="progressbar"
+                [attr.aria-label]="item.etiqueta"
+                [attr.aria-valuenow]="item.porcentaje"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              >
+                <div
+                  class="progress-fill"
+                  [class]="'fill-' + item.claseCss"
+                  [style.width.%]="item.porcentaje"
+                ></div>
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (kpis && totalOrdenesActivas === 0) {
+          <p class="empty-active-hint">
+            No hay órdenes activas registradas en este momento.
+          </p>
+        }
+      </section>
+    }
+  }
+</div>

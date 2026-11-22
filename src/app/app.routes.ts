@@ -21,10 +21,9 @@ export const routes: Routes = [
         children: [
             {
                 path: 'dashboard',
-                loadComponent: () => import('./pages/coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
+                loadComponent: () => import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
                 data: {
                     title: 'Dashboard',
-                    description: 'KPIs y resumen operativo. Disponible cuando ms-digitalfix-report esté integrado.',
                 },
             },
             {
