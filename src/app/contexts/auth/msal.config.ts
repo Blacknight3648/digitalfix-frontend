@@ -1,4 +1,3 @@
-// src/app/config/msal.config.ts
 import {
   IPublicClientApplication,
   PublicClientApplication,
@@ -51,12 +50,16 @@ export function msalInstanceFactory(): IPublicClientApplication {
 export function msalInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap = new Map<string, Array<string> | null>();
 
-  // Todas las llamadas van al BFF, que valida el access token (scope
-  // access_as_user) y lo reenvía a los microservicios.
-  protectedResourceMap.set(`${environment.bffUrl}/*`, environment.azure.protectedResourceScopes);
+  // Con strictMatching activo, `${environment.bffUrl}/api/*` cubre todas las rutas
+  // bajo /api/ (como /api/v1/login/me) hacia el BFF.
+  protectedResourceMap.set(
+    `${environment.bffUrl}/api/*`,
+    environment.azure.protectedResourceScopes,
+  );
 
   return {
     interactionType: InteractionType.Redirect,
     protectedResourceMap,
+    strictMatching: true,
   };
 }
