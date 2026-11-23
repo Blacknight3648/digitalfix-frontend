@@ -1,35 +1,22 @@
 import { RenderMode, ServerRoute } from '@angular/ssr';
 
-// Todas las rutas del layout principal (dashboard, home, catalog, reports,
-// audit) dependen de authGuard, que usa MSAL y solo existe en el bootstrap del navegador.
-// Por eso se renderizan en el cliente en vez de pre-renderizarse en el servidor.
+// Solo el login ('' y 'login') se pre-renderiza: es la única pantalla pública.
+// Todas las demás dependen de authGuard/roleGuard, que usan MSAL y solo existen
+// en el navegador. Si se pre-renderizaran, en el build no hay sesión y Angular
+// genera un HTML fijo que redirige a '/' (pasaba con /usuarios, /servicios,
+// /proveedores y /mensajeria: el SUPERADMIN nunca podía entrar a sus pantallas).
+// Por eso el comodín es Client: cualquier ruta nueva queda bien por defecto.
 export const serverRoutes: ServerRoute[] = [
   {
-    path: 'dashboard',
-    renderMode: RenderMode.Client
+    path: '',
+    renderMode: RenderMode.Prerender
   },
   {
-    path: 'home',
-    renderMode: RenderMode.Client
-  },
-  {
-    path: 'catalog',
-    renderMode: RenderMode.Client
-  },
-  {
-    path: 'reports',
-    renderMode: RenderMode.Client
-  },
-  {
-    path: 'audit',
-    renderMode: RenderMode.Client
-  },
-  {
-    path: 'clientes/**',
-    renderMode: RenderMode.Client
+    path: 'login',
+    renderMode: RenderMode.Prerender
   },
   {
     path: '**',
-    renderMode: RenderMode.Prerender
+    renderMode: RenderMode.Client
   }
 ];
