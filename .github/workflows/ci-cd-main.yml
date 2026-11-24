@@ -1,0 +1,72 @@
+# CI/CD del frontend: cada push a main se compila y, si compila, se despliega en AWS.
+#
+#   1. Compilar  -> npm ci + ng build. Si no compila, no se despliega.
+#   2. Desplegar -> entra por SSH a la EC2 del frontend, baja main y reconstruye
+#                   el contenedor con docker compose.
+#
+# Secrets necesarios en este repo:
+#   EC2_HOST     IP pública (o DNS) de la EC2 del frontend
+#   EC2_USER     usuario SSH (ej. ubuntu). También sirve EC2_USERNAME.
+#   EC2_SSH_KEY  contenido completo del .pem
+name: CI/CD main
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Compilar
+    runs-on: ubuntu-latest
+    # Si llegan dos push seguidos, la compilación del anterior se cancela.
+    concurrency:
+      group: ci-build-${{ github.ref }}
+      cancel-in-progress: true
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar (producción)
+        run: npm run build
+
+  deploy:
+    name: Desplegar en AWS
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Un despliegue ya iniciado nunca se corta a medias: el siguiente espera.
+    concurrency:
+      group: deploy-frontend
+      cancel-in-progress: false
+    steps:
+      - name: Configurar llave SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Desplegar en la EC2 vía SSH
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER || secrets.EC2_USERNAME }}
+        run: |
+          ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 -o ServerAliveInterval=30 "$USER@$HOST" << 'EOF'
+            set -e
+            cd ~/frontend/digitalfix-frontend
+            git fetch origin main
+            git reset --hard origin/main
+            docker compose build
+            docker compose up -d --force-recreate
+            docker image prune -f
+            docker compose ps
+          EOF

@@ -51,7 +51,7 @@ export function msalInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap = new Map<string, Array<string> | null>();
 
   // Con strictMatching activo, `${environment.bffUrl}/api/*` cubre todas las rutas
-  // bajo /api/ (como /api/v1/login/me) hacia el BFF.
+  // bajo /api/ (como /api/v1/login/me) hacia el BFF sin interceptar recursos estáticos.
   protectedResourceMap.set(
     `${environment.bffUrl}/api/*`,
     environment.azure.protectedResourceScopes,

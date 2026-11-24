@@ -42,6 +42,13 @@ app.use(
     maxAge: '1y',
     index: false,
     redirect: false,
+    // Los HTML no llevan hash: si se cachearan un año, el navegador seguiría
+    // usando la versión vieja de la app después de cada despliegue.
+    setHeaders: (res, path) => {
+      if (path.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      }
+    },
   }),
 );
 
