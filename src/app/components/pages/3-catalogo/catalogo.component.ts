@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ETIQUETA_TIPO_MOVIMIENTO, ETIQUETA_UNIDAD_MEDIDA, UNIDADES_MEDIDA } from '@models/repuesto.model';
@@ -9,6 +9,9 @@ import { AuthService } from '@contexts/auth/auth.service';
 import { ServicioRepuestos } from '@remote/service/catalogo/servicio-repuestos.service';
 import { CAMPOS_CHILE } from '@components/ui/directives/campos-chile.directive';
 import { capitalizarPrimera } from '@utils/formato-chile';
+import { PAGINACION } from '@components/ui/paginador';
+import { NotificacionesService } from '@components/ui/notificaciones/notificaciones.service';
+import { ConfirmacionService } from '@components/ui/confirmacion/confirmacion.service';
 
 const FORMULARIO_VACIO: RepuestoPeticion = {
     nombre: '',
@@ -28,24 +31,28 @@ type Modal = 'repuesto' | 'entrada' | 'historial';
 @Component({
     standalone: true,
     selector: 'app-catalogo',
-    imports: [CommonModule, FormsModule, ...CAMPOS_CHILE],
+    imports: [CommonModule, FormsModule, ...CAMPOS_CHILE, ...PAGINACION],
     templateUrl: './catalogo.component.html',
 })
 export class CatalogoComponent implements OnInit {
     private readonly servicio = inject(ServicioRepuestos);
     private readonly authService = inject(AuthService);
+    private readonly notificaciones = inject(NotificacionesService);
+    private readonly confirmacion = inject(ConfirmacionService);
 
     readonly unidades = UNIDADES_MEDIDA;
     readonly etiquetaUnidad = ETIQUETA_UNIDAD_MEDIDA;
     readonly etiquetaMovimiento = ETIQUETA_TIPO_MOVIMIENTO;
+    readonly filasFantasma = [1, 2, 3, 4, 5];
 
     repuestos: Repuesto[] = [];
     cargando = false;
     guardando = false;
     mensajeError = '';
-    mensajeExito = '';
     terminoBusqueda = '';
     soloBajoStock = false;
+    pagina = 1;
+    tamano = 10;
 
     modal: Modal | null = null;
     // Repuesto sobre el que actúa el modal abierto (null = creando uno nuevo).
@@ -78,6 +85,9 @@ export class CatalogoComponent implements OnInit {
 
     cargar(): void {
         this.cargando = true;
+        if (!this.modal) {
+            this.mensajeError = '';
+        }
         this.servicio.listar().subscribe({
             next: (repuestos) => {
                 this.repuestos = repuestos;
@@ -150,9 +160,9 @@ export class CatalogoComponent implements OnInit {
             next: (guardado) => {
                 this.guardando = false;
                 this.modal = null;
-                this.mensajeExito = editando
+                this.notificaciones.exito(editando
                     ? `Repuesto ${guardado.codigo} actualizado.`
-                    : `Repuesto ${guardado.codigo} creado con ${guardado.stockDisponible} en stock.`;
+                    : `Repuesto ${guardado.codigo} creado con ${guardado.stockDisponible} en stock.`);
                 this.cargar();
             },
             error: (err) => {
@@ -173,7 +183,7 @@ export class CatalogoComponent implements OnInit {
             next: (movimiento) => {
                 this.guardando = false;
                 this.modal = null;
-                this.mensajeExito = `Se repusieron ${movimiento.cantidad} de ${repuesto.codigo}; stock actual: ${movimiento.stockResultante}.`;
+                this.notificaciones.exito(`Se repusieron ${movimiento.cantidad} de ${repuesto.codigo}; stock actual: ${movimiento.stockResultante}.`);
                 this.cargar();
             },
             error: (err) => {
@@ -183,23 +193,34 @@ export class CatalogoComponent implements OnInit {
         });
     }
 
-    eliminar(repuesto: Repuesto): void {
-        if (!confirm(`¿Eliminar el repuesto ${repuesto.codigo}? Si ya tiene movimientos de stock, el sistema pedirá desactivarlo.`)) {
+    async eliminar(repuesto: Repuesto): Promise<void> {
+        const confirmada = await this.confirmacion.preguntar({
+            titulo: `¿Eliminar ${repuesto.codigo}?`,
+            mensaje: `${repuesto.nombre}. Si ya tiene movimientos de stock, el sistema pedirá desactivarlo en vez de eliminarlo.`,
+            confirmar: 'Eliminar',
+            peligro: true,
+        });
+        if (!confirmada) {
             return;
         }
-        this.limpiarMensajes();
         this.servicio.eliminar(repuesto.idRepuesto).subscribe({
             next: () => {
-                this.mensajeExito = `Repuesto ${repuesto.codigo} eliminado.`;
+                this.notificaciones.exito(`Repuesto ${repuesto.codigo} eliminado.`);
                 this.cargar();
             },
-            error: (err) => (this.mensajeError = mensajeDeError(err, 'eliminar el repuesto')),
+            error: (err) => this.notificaciones.error(mensajeDeError(err, 'eliminar el repuesto')),
         });
     }
 
     limpiarMensajes(): void {
         this.mensajeError = '';
-        this.mensajeExito = '';
+    }
+
+    @HostListener('document:keydown.escape')
+    cerrarConEscape(): void {
+        if (!this.confirmacion.actual()) {
+            this.cerrarModal();
+        }
     }
 
     private abrir(modal: Modal, repuesto: Repuesto | null): void {

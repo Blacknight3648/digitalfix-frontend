@@ -1,38 +1,39 @@
-<div class="card">
-  <div class="card-header">
-    <div>
-      <h2>Clientes</h2>
-      <p>{{ clientesFiltrados.length }} de {{ clientes.length }} clientes registrados en digitalfix-ms-workorders</p>
-    </div>
-    <div class="header-actions">
-      <button class="btn-refresh" type="button" (click)="cargar()" [disabled]="cargando" title="Actualizar lista">
-        <span class="material-icons" [class.rotating]="cargando">refresh</span>
-      </button>
-      <a class="btn-primary" routerLink="/clientes/nuevo">+ Nuevo cliente</a>
-    </div>
+<header class="page-head">
+  <div class="page-head-text">
+    <h1>Clientes</h1>
+    <p>{{ clientes.length }} clientes registrados</p>
   </div>
+  <div class="page-head-actions">
+    <button class="btn-refresh" type="button" (click)="cargar()" [disabled]="cargando" aria-label="Actualizar lista" data-tip="Actualizar">
+      <span class="material-icons" [class.rotating]="cargando">refresh</span>
+    </button>
+    <a class="btn-primary" routerLink="/clientes/nuevo">
+      <span class="material-icons">person_add</span> Nuevo cliente
+    </a>
+  </div>
+</header>
 
-  @if (mensajeExito) {
-    <div class="alert alert-success">
-      <span class="material-icons">check_circle</span>
-      <span>{{ mensajeExito }}</span>
-      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
-    </div>
-  }
-  @if (mensajeError) {
-    <div class="alert alert-danger">
-      <span class="material-icons">error_outline</span>
-      <span>{{ mensajeError }}</span>
-      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
-    </div>
-  }
-
-  <div class="filters">
+<section class="panel">
+  <div class="toolbar">
     <div class="search-input-wrapper">
       <span class="material-icons search-icon">search</span>
-      <input type="search" placeholder="Buscar por nombre, RUT, correo, teléfono o comuna..." [(ngModel)]="terminoBusqueda" />
+      <input type="search" placeholder="Buscar por nombre, RUT, correo, teléfono o comuna" aria-label="Buscar clientes"
+        [(ngModel)]="terminoBusqueda" (ngModelChange)="pagina = 1" />
+      @if (terminoBusqueda) {
+        <button type="button" class="btn-limpiar-busqueda" (click)="terminoBusqueda = ''" aria-label="Limpiar búsqueda">
+          <span class="material-icons">close</span>
+        </button>
+      }
     </div>
   </div>
+
+  @if (mensajeError) {
+    <div class="alert alert-danger" role="alert">
+      <span class="material-icons">error_outline</span>
+      <span>{{ mensajeError }}</span>
+      <button type="button" class="btn-secondary btn-sm" (click)="cargar()">Reintentar</button>
+    </div>
+  }
 
   <div class="table-wrap">
     <table>
@@ -46,23 +47,23 @@
         </tr>
       </thead>
       <tbody>
-        @if (cargando) {
-          <tr>
-            <td colspan="5" class="loading-cell">
-              <div class="spinner-small"></div>
-              <span>Consultando clientes en digitalfix-ms-workorders...</span>
-            </td>
-          </tr>
+        @if (cargando && !clientes.length) {
+          @for (fila of filasFantasma; track fila) {
+            <tr><td class="celda-skeleton" colspan="5"><span class="skeleton w-90"></span><span class="skeleton w-50"></span></td></tr>
+          }
         } @else {
-          @for (cliente of clientesFiltrados; track cliente.idCliente) {
+          @for (cliente of clientesFiltrados | paginar: pagina : tamano; track cliente.idCliente) {
             <tr>
-              <td>
-                <div class="main-cell">
-                  <strong>{{ cliente.nombreCompleto }}</strong>
-                  <span class="sub-text">{{ cliente.rut }}</span>
+              <td class="col-principal">
+                <div class="cell-avatar">
+                  <span class="mini-avatar" aria-hidden="true">{{ iniciales(cliente.nombreCompleto) }}</span>
+                  <div class="main-cell">
+                    <strong>{{ cliente.nombreCompleto }}</strong>
+                    <span class="sub-text nowrap">{{ cliente.rut }}</span>
+                  </div>
                 </div>
               </td>
-              <td>
+              <td data-label="Contacto">
                 <div class="main-cell">
                   <span>{{ cliente.email }}</span>
                   <span class="sub-text">
@@ -71,7 +72,7 @@
                   </span>
                 </div>
               </td>
-              <td>
+              <td data-label="Dirección">
                 @if (cliente.direccion; as dir) {
                   <div class="main-cell">
                     <a class="map-link inline" [href]="enlaceMapa(dir.textoCompleto)" target="_blank" rel="noopener noreferrer"
@@ -82,11 +83,15 @@
                   <span class="badge badge-pendiente" title="Edita el cliente para agregar su dirección">Sin dirección</span>
                 }
               </td>
-              <td>{{ cliente.fechaCreacion | date:'d MMM y' }}</td>
-              <td>
+              <td data-label="Registrado" class="sub-text nowrap">{{ cliente.fechaCreacion | date:'d MMM y' }}</td>
+              <td class="col-acciones">
                 <div class="row-actions">
-                  <button class="btn-ghost" type="button" (click)="eliminar(cliente)">Eliminar</button>
-                  <a class="btn-secondary" [routerLink]="['/clientes', cliente.idCliente, 'editar']">Editar</a>
+                  <a class="accion accion-editar" [routerLink]="['/clientes', cliente.idCliente, 'editar']" aria-label="Editar" data-tip="Editar">
+                    <span class="material-icons">edit</span>
+                  </a>
+                  <button class="accion accion-eliminar" type="button" (click)="eliminar(cliente)" aria-label="Eliminar" data-tip="Eliminar">
+                    <span class="material-icons">delete_outline</span>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -94,7 +99,12 @@
             <tr>
               <td colspan="5" class="empty-hint">
                 <span class="material-icons empty-icon">groups</span>
-                <p>No hay clientes que coincidan con la búsqueda.</p>
+                @if (clientes.length) {
+                  <p>No hay clientes que coincidan con la búsqueda.</p>
+                } @else {
+                  <p>Aún no hay clientes registrados.</p>
+                  <a class="btn-primary" routerLink="/clientes/nuevo"><span class="material-icons">person_add</span> Crear cliente</a>
+                }
               </td>
             </tr>
           }
@@ -102,4 +112,6 @@
       </tbody>
     </table>
   </div>
-</div>
+
+  <app-paginador [total]="clientesFiltrados.length" [(pagina)]="pagina" [(tamano)]="tamano" />
+</section>

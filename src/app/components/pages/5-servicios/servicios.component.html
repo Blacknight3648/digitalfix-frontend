@@ -1,38 +1,54 @@
-<div class="card">
-  <div class="card-header">
-    <div>
-      <h2>Catálogo de servicios</h2>
-      <p>{{ cantidadActivos }} activos de {{ servicios.length }} · son los que el cliente elige al crear una orden</p>
-    </div>
-    <div class="header-actions">
-      <button class="btn-refresh" type="button" (click)="cargar()" [disabled]="cargando" title="Actualizar lista">
-        <span class="material-icons" [class.rotating]="cargando">refresh</span>
-      </button>
-      <button class="btn-primary" type="button" (click)="abrirCreacion()">+ Nuevo servicio</button>
-    </div>
+<header class="page-head">
+  <div class="page-head-text">
+    <h1>Catálogo de servicios</h1>
+    <p>Los servicios activos son los que el cliente elige al crear una orden</p>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn-refresh" type="button" (click)="cargar()" [disabled]="cargando" aria-label="Actualizar lista" data-tip="Actualizar">
+      <span class="material-icons" [class.rotating]="cargando">refresh</span>
+    </button>
+    <button class="btn-primary" type="button" (click)="abrirCreacion()">
+      <span class="material-icons">add</span> Nuevo servicio
+    </button>
+  </div>
+</header>
+
+<section class="panel">
+  <div class="chips" role="tablist" aria-label="Filtrar por estado">
+    <button type="button" class="chip" role="tab" [class.activo]="filtroEstado === ''" [attr.aria-selected]="filtroEstado === ''"
+      (click)="filtroEstado = ''; pagina = 1">
+      Todos <span class="chip-n">{{ servicios.length }}</span>
+    </button>
+    <button type="button" class="chip" role="tab" [class.activo]="filtroEstado === 'activos'" [attr.aria-selected]="filtroEstado === 'activos'"
+      (click)="filtroEstado = 'activos'; pagina = 1">
+      Activos <span class="chip-n">{{ cantidadActivos }}</span>
+    </button>
+    <button type="button" class="chip" role="tab" [class.activo]="filtroEstado === 'inactivos'" [attr.aria-selected]="filtroEstado === 'inactivos'"
+      (click)="filtroEstado = 'inactivos'; pagina = 1">
+      Inactivos <span class="chip-n">{{ servicios.length - cantidadActivos }}</span>
+    </button>
   </div>
 
-  @if (mensajeExito) {
-    <div class="alert alert-success">
-      <span class="material-icons">check_circle</span>
-      <span>{{ mensajeExito }}</span>
-      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
-    </div>
-  }
-  @if (mensajeError && !modalAbierto) {
-    <div class="alert alert-danger">
-      <span class="material-icons">error_outline</span>
-      <span>{{ mensajeError }}</span>
-      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
-    </div>
-  }
-
-  <div class="filters">
+  <div class="toolbar">
     <div class="search-input-wrapper">
       <span class="material-icons search-icon">search</span>
-      <input type="search" placeholder="Buscar por código, nombre o descripción..." [(ngModel)]="terminoBusqueda" />
+      <input type="search" placeholder="Buscar por código, nombre o descripción" aria-label="Buscar servicios"
+        [(ngModel)]="terminoBusqueda" (ngModelChange)="pagina = 1" />
+      @if (terminoBusqueda) {
+        <button type="button" class="btn-limpiar-busqueda" (click)="terminoBusqueda = ''" aria-label="Limpiar búsqueda">
+          <span class="material-icons">close</span>
+        </button>
+      }
     </div>
   </div>
+
+  @if (mensajeError && !modalAbierto) {
+    <div class="alert alert-danger" role="alert">
+      <span class="material-icons">error_outline</span>
+      <span>{{ mensajeError }}</span>
+      <button type="button" class="btn-secondary btn-sm" (click)="cargar()">Reintentar</button>
+    </div>
+  }
 
   <div class="table-wrap">
     <table>
@@ -47,36 +63,37 @@
         </tr>
       </thead>
       <tbody>
-        @if (cargando) {
-          <tr>
-            <td colspan="6" class="loading-cell">
-              <div class="spinner-small"></div>
-              <span>Consultando el catálogo en digitalfix-ms-workorders...</span>
-            </td>
-          </tr>
+        @if (cargando && !servicios.length) {
+          @for (fila of filasFantasma; track fila) {
+            <tr><td class="celda-skeleton" colspan="6"><span class="skeleton w-90"></span><span class="skeleton w-50"></span></td></tr>
+          }
         } @else {
-          @for (servicio of serviciosFiltrados; track servicio.idServicio) {
+          @for (servicio of serviciosFiltrados | paginar: pagina : tamano; track servicio.idServicio) {
             <tr>
-              <td class="id-cell">{{ servicio.codigo }}</td>
-              <td>
+              <td class="id-cell" data-label="Código">{{ servicio.codigo }}</td>
+              <td class="col-principal">
                 <div class="main-cell">
                   <strong>{{ servicio.nombre }}</strong>
                   @if (servicio.descripcion) {
-                    <span class="sub-text">{{ servicio.descripcion }}</span>
+                    <span class="sub-text clamp-2">{{ servicio.descripcion }}</span>
                   }
                 </div>
               </td>
-              <td class="money">${{ servicio.tarifa | number:'1.0-0' }}</td>
-              <td>
+              <td data-label="Tarifa" class="money">${{ servicio.tarifa | number:'1.0-0' }}</td>
+              <td data-label="Estado">
                 <span class="badge" [class.badge-activo]="servicio.activo" [class.badge-inactivo]="!servicio.activo">
                   {{ servicio.activo ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
-              <td>{{ (servicio.fechaActualizacion ?? servicio.fechaCreacion) | date:'d MMM y' }}</td>
-              <td>
+              <td data-label="Actualizado" class="sub-text nowrap">{{ (servicio.fechaActualizacion ?? servicio.fechaCreacion) | date:'d MMM y' }}</td>
+              <td class="col-acciones">
                 <div class="row-actions">
-                  <button class="btn-ghost" type="button" (click)="eliminar(servicio)">Eliminar</button>
-                  <button class="btn-secondary" type="button" (click)="abrirEdicion(servicio)">Editar</button>
+                  <button class="accion accion-editar" type="button" (click)="abrirEdicion(servicio)" aria-label="Editar" data-tip="Editar">
+                    <span class="material-icons">edit</span>
+                  </button>
+                  <button class="accion accion-eliminar" type="button" (click)="eliminar(servicio)" aria-label="Eliminar" data-tip="Eliminar">
+                    <span class="material-icons">delete_outline</span>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -84,7 +101,12 @@
             <tr>
               <td colspan="6" class="empty-hint">
                 <span class="material-icons empty-icon">handyman</span>
-                <p>{{ servicios.length ? 'No hay servicios que coincidan con la búsqueda.' : 'Aún no hay servicios. Crea el primero para que los clientes puedan elegirlo.' }}</p>
+                @if (servicios.length) {
+                  <p>No hay servicios que coincidan con los filtros.</p>
+                } @else {
+                  <p>Aún no hay servicios. Crea el primero para que los clientes puedan elegirlo.</p>
+                  <button type="button" class="btn-primary" (click)="abrirCreacion()"><span class="material-icons">add</span> Crear servicio</button>
+                }
               </td>
             </tr>
           }
@@ -92,19 +114,21 @@
       </tbody>
     </table>
   </div>
-</div>
+
+  <app-paginador [total]="serviciosFiltrados.length" [(pagina)]="pagina" [(tamano)]="tamano" />
+</section>
 
 @if (modalAbierto) {
   <div class="overlay" (click)="cerrarModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-servicio" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>{{ idEditando === null ? 'Nuevo servicio' : 'Editar servicio' }}</h3>
-        <button type="button" class="material-icons close-btn" (click)="cerrarModal()">close</button>
+        <h3 id="titulo-servicio">{{ idEditando === null ? 'Nuevo servicio' : 'Editar servicio' }}</h3>
+        <button type="button" class="material-icons close-btn" (click)="cerrarModal()" aria-label="Cerrar">close</button>
       </div>
       <p class="modal-sub">Los campos con * son obligatorios.</p>
 
       @if (mensajeError) {
-        <div class="alert alert-danger">
+        <div class="alert alert-danger" role="alert">
           <span class="material-icons">error_outline</span>
           <span>{{ mensajeError }}</span>
         </div>

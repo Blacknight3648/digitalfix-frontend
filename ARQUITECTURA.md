@@ -16,7 +16,9 @@ src/app/
 │   │   ├── 7-proveedores/
 │   │   ├── 8-mensajeria/
 │   │   └── 9-coming-soon/     Dashboard, Reportería y Auditoría mientras no existan
-│   └── ui/                Piezas reutilizables: direccion-campos/, directives/, pipes/
+│   └── ui/                Piezas reutilizables: direccion-campos/, directives/, pipes/,
+│                          paginador/ (tabla paginada), notificaciones/ (toasts),
+│                          confirmacion/ (reemplazo de window.confirm)
 ├── contexts/
 │   └── auth/              Sesión: AuthService (signals), MSAL, arranque y guards/
 ├── remote/
@@ -100,14 +102,34 @@ import { AuthService } from '@contexts/auth/auth.service';
 
 ```text
 src/styles.scss              única entrada global (angular.json)
-src/styles/_tokens.scss      colores y estados (variables CSS)
-src/styles/_base.scss        reset y tipografía
-src/styles/_components.scss  tarjeta, botones, alertas, tabla, modal, formularios, badges
+src/styles/_tokens.scss      parámetros visuales: color, tipografía, espaciado, radios, sombras, movimiento, capas
+src/styles/_base.scss        reset, tipografía, foco accesible, movimiento reducido
+src/styles/_components.scss  página, panel, botones, acciones de fila, filtros, controles, alertas,
+                             badges, tabla responsiva, esqueletos, modal, paginador, toasts, confirmación
 ```
 
 - Un componente **no** vuelve a declarar estilos que ya están en `styles/`: su CSS propio queda solo para lo exclusivo de esa pantalla (ej. `home.component.css` para el detalle de una orden).
 - Si un estilo se repite en dos pantallas, se mueve a `_components.scss`.
-- Los colores se usan siempre como `var(--token)`.
+- Colores, tamaños de letra, espacios, radios y sombras se usan siempre como `var(--token)`.
+- El login tiene estilos propios y usa algunos tokens heredados (`--negro`, `--gris-fondo`, `--borde`, `--asignada-fg`…): no cambiar sus valores sin revisarlo.
+
+### Patrón de una pantalla con tabla
+
+```html
+<header class="page-head">título, subtítulo y acciones (btn-refresh, btn-primary)</header>
+<section class="panel">
+  <div class="chips">filtro rápido con contadores (opcional)</div>
+  <div class="toolbar">búsqueda + filtros</div>
+  <div class="table-wrap"><table>…</table></div>
+  <app-paginador [total]="filtradas.length" [(pagina)]="pagina" [(tamano)]="tamano" />
+</section>
+```
+
+- Filas: `@for (x of filtradas | paginar: pagina : tamano; …)`.
+- En teléfono cada fila es una tarjeta: la celda con `class="col-principal"` es el título, cada `<td data-label="…">` muestra su etiqueta y `class="col-acciones"` va al pie.
+- Acciones de fila: `<button class="accion accion-editar" aria-label="Editar" data-tip="Editar">` (variantes `-ver`, `-editar`, `-eliminar`, `-aviso`, `-exito`).
+- Resultado de una acción → `NotificacionesService.exito()/error()`. Error de carga de la lista → alerta en el panel con "Reintentar". Error al guardar en un modal → alerta dentro del modal.
+- Confirmaciones → `await ConfirmacionService.preguntar({ titulo, mensaje, peligro: true })`, nunca `window.confirm`.
 
 ## Principios SOLID aplicados
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DESCRIPCION_TIPO_PROVEEDOR, ETIQUETA_TIPO_PROVEEDOR, TipoProveedor } from '@models/directorio.model';
@@ -9,6 +9,9 @@ import { ServicioProveedores } from '@remote/service/directorio/servicio-proveed
 import { CAMPOS_CHILE } from '@components/ui/directives/campos-chile.directive';
 import { DireccionCamposComponent } from '@components/ui/direccion-campos/direccion-campos.component';
 import { TelefonoPipe } from '@components/ui/pipes/telefono.pipe';
+import { PAGINACION } from '@components/ui/paginador';
+import { NotificacionesService } from '@components/ui/notificaciones/notificaciones.service';
+import { ConfirmacionService } from '@components/ui/confirmacion/confirmacion.service';
 
 interface FormularioProveedor {
     rut: string;
@@ -29,11 +32,14 @@ function formularioVacio(): FormularioProveedor {
 @Component({
     standalone: true,
     selector: 'app-proveedores',
-    imports: [CommonModule, FormsModule, ...CAMPOS_CHILE, DireccionCamposComponent, TelefonoPipe],
+    imports: [CommonModule, FormsModule, ...CAMPOS_CHILE, DireccionCamposComponent, TelefonoPipe, ...PAGINACION],
     templateUrl: './proveedores.component.html',
 })
 export class ProveedoresComponent implements OnInit {
     private readonly servicio = inject(ServicioProveedores);
+    private readonly notificaciones = inject(NotificacionesService);
+    private readonly confirmacion = inject(ConfirmacionService);
+    readonly filasFantasma = [1, 2, 3, 4, 5];
 
     readonly tipos: TipoProveedor[] = ['PRODUCTOS', 'SERVICIOS'];
     readonly etiquetaTipo = ETIQUETA_TIPO_PROVEEDOR;
@@ -44,9 +50,10 @@ export class ProveedoresComponent implements OnInit {
     cargando = false;
     guardando = false;
     mensajeError = '';
-    mensajeExito = '';
     terminoBusqueda = '';
     filtroTipo: TipoProveedor | '' = '';
+    pagina = 1;
+    tamano = 10;
 
     modalAbierto = false;
     // null = creando; con id = editando ese proveedor.
@@ -72,8 +79,15 @@ export class ProveedoresComponent implements OnInit {
         });
     }
 
+    cantidadPorTipo(tipo: TipoProveedor): number {
+        return this.proveedores.filter((p) => p.tipo === tipo).length;
+    }
+
     cargar(): void {
         this.cargando = true;
+        if (!this.modalAbierto) {
+            this.mensajeError = '';
+        }
         this.servicio.listar().subscribe({
             next: (proveedores) => {
                 this.proveedores = proveedores;
@@ -134,9 +148,9 @@ export class ProveedoresComponent implements OnInit {
             next: (proveedor) => {
                 this.guardando = false;
                 this.modalAbierto = false;
-                this.mensajeExito = editando
+                this.notificaciones.exito(editando
                     ? `Proveedor ${proveedor.razonSocial} actualizado.`
-                    : `Proveedor ${proveedor.razonSocial} creado.`;
+                    : `Proveedor ${proveedor.razonSocial} creado.`);
                 this.cargar();
             },
             error: (err) => {
@@ -146,22 +160,33 @@ export class ProveedoresComponent implements OnInit {
         });
     }
 
-    eliminar(proveedor: Proveedor): void {
-        if (!confirm(`¿Eliminar al proveedor ${proveedor.razonSocial}? Esta acción no se puede deshacer.`)) {
+    async eliminar(proveedor: Proveedor): Promise<void> {
+        const confirmada = await this.confirmacion.preguntar({
+            titulo: `¿Eliminar a ${proveedor.razonSocial}?`,
+            mensaje: 'Esta acción no se puede deshacer.',
+            confirmar: 'Eliminar',
+            peligro: true,
+        });
+        if (!confirmada) {
             return;
         }
-        this.limpiarMensajes();
         this.servicio.eliminar(proveedor.idProveedor).subscribe({
             next: () => {
-                this.mensajeExito = `Proveedor ${proveedor.razonSocial} eliminado.`;
+                this.notificaciones.exito(`Proveedor ${proveedor.razonSocial} eliminado.`);
                 this.cargar();
             },
-            error: (err) => (this.mensajeError = mensajeDeError(err, 'eliminar el proveedor')),
+            error: (err) => this.notificaciones.error(mensajeDeError(err, 'eliminar el proveedor')),
         });
     }
 
     limpiarMensajes(): void {
         this.mensajeError = '';
-        this.mensajeExito = '';
+    }
+
+    @HostListener('document:keydown.escape')
+    cerrarConEscape(): void {
+        if (!this.confirmacion.actual()) {
+            this.cerrarModal();
+        }
     }
 }

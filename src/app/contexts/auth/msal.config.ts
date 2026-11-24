@@ -1,4 +1,3 @@
-// src/app/config/msal.config.ts
 import {
   IPublicClientApplication,
   PublicClientApplication,
@@ -51,11 +50,20 @@ export function msalInstanceFactory(): IPublicClientApplication {
 export function msalInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap = new Map<string, Array<string> | null>();
 
+<<<<<<< HEAD
   // Todas las llamadas van al BFF, que valida el access token (scope
   // access_as_user) y lo reenvía a los microservicios.
   // Una sola entrada: "/*" ya cubre "/api/*"; dos patrones que coinciden con la
   // misma URL hacen que MSAL avise "More than 1 matching scopes for endpoint found".
   protectedResourceMap.set(`${environment.bffUrl}/*`, environment.azure.protectedResourceScopes);
+=======
+  // Con strictMatching activo, `${environment.bffUrl}/api/*` cubre todas las rutas
+  // bajo /api/ (como /api/v1/login/me) hacia el BFF.
+  protectedResourceMap.set(
+    `${environment.bffUrl}/api/*`,
+    environment.azure.protectedResourceScopes,
+  );
+>>>>>>> origin/develop
 
   return {
     interactionType: InteractionType.Redirect,

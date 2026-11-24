@@ -1,71 +1,88 @@
 .sidebar {
   flex: 1;
-  background: var(--blanco);
-  border-right: 1px solid var(--borde);
   display: flex;
   flex-direction: column;
-  padding: 20px 16px;
   min-height: 100%;
+  padding: var(--esp-5) var(--esp-3);
+  background: var(--superficie);
+  border-right: 1px solid var(--borde);
 }
 
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 8px;
-  margin-bottom: 28px;
+  gap: var(--esp-3);
+  padding: 0 var(--esp-2);
+  margin-bottom: var(--esp-6);
+}
+
+.brand-logo {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
 }
 
 .brand-text {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  line-height: 1.2;
 }
 
 .brand-name {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
   color: var(--texto);
 }
 
-.brand-sub {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.brand-name span {
   color: var(--primario);
+}
+
+.brand-sub {
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-medio);
+  color: var(--texto-tenue);
 }
 
 .nav-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .nav-section {
-  font-size: 11px;
-  font-weight: 600;
+  padding: var(--esp-4) var(--esp-3) 6px;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semi);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--texto-tenue);
-  padding: 0 12px 6px;
+}
+
+.nav-section:first-child {
+  padding-top: 0;
 }
 
 .nav-link {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  gap: var(--esp-3);
+  min-height: 40px;
+  padding: 0 var(--esp-3);
+  border-radius: var(--radio);
   color: var(--texto-secundario);
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background 0.15s, color 0.15s;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-medio);
+  transition: background var(--dur) var(--curva), color var(--dur) var(--curva);
 }
 
 .nav-link .material-icons {
   font-size: 20px;
+  transition: transform var(--dur) var(--curva);
 }
 
 .nav-link:hover {
@@ -73,10 +90,28 @@
   color: var(--texto);
 }
 
+/* Ítem activo: fondo suave de marca y barra a la izquierda */
 .nav-link.selected {
   background: var(--primario-suave);
   color: var(--primario);
-  font-weight: 600;
+  font-weight: var(--fw-semi);
+}
+
+.nav-link.selected::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--esp-3) * -1);
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--primario);
+}
+
+.nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar-spacer {
@@ -84,22 +119,11 @@
 }
 
 .sidebar-footer {
-  font-size: 11px;
-  color: var(--texto-tenue);
-  padding: 12px 12px 0;
+  margin-top: var(--esp-4);
+  padding: var(--esp-3) var(--esp-3) 0;
   border-top: 1px solid var(--borde);
-}
-
-.brand-logo {
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-}
-
-.nav-label {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: var(--fs-2xs);
+  color: var(--texto-tenue);
 }
 
 /* Solo existe en el panel móvil */
@@ -110,19 +134,33 @@
 /* Riel de íconos (881–1199px): mismo menú sin textos; el nombre queda en el title */
 @media (max-width: 1199px) and (min-width: 881px) {
   .sidebar {
-    padding: 20px 10px;
+    padding: var(--esp-5) var(--esp-2);
     align-items: center;
   }
 
   .sidebar-brand {
     padding: 0;
-    margin-bottom: 24px;
+    margin-bottom: var(--esp-5);
   }
 
   .brand-text,
-  .nav-section,
   .nav-label,
   .sidebar-footer {
+    display: none;
+  }
+
+  /* El título de sección se reemplaza por una línea divisoria */
+  .nav-section {
+    width: 32px;
+    height: 1px;
+    margin: var(--esp-3) auto;
+    padding: 0;
+    overflow: hidden;
+    color: transparent;
+    background: var(--borde);
+  }
+
+  .nav-section:first-child {
     display: none;
   }
 
@@ -137,20 +175,23 @@
     height: 44px;
     padding: 0;
   }
+
+  .nav-link.selected::before {
+    left: -8px;
+  }
 }
 
 /* Panel deslizable (≤ 880px): el menú completo, con botón para cerrarlo */
 @media (max-width: 880px) {
   .sidebar {
-    min-height: 100%;
     height: 100%;
     overflow-y: auto;
-    padding: 16px 12px;
+    padding: var(--esp-4) var(--esp-3);
     border-right: none;
   }
 
   .sidebar-brand {
-    margin-bottom: 20px;
+    margin-bottom: var(--esp-4);
   }
 
   .btn-cerrar-menu {
@@ -173,6 +214,6 @@
 
   /* Áreas táctiles de al menos 44px */
   .nav-link {
-    min-height: 44px;
+    min-height: var(--alto-tactil);
   }
 }

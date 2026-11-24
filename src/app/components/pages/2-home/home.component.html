@@ -1,135 +1,137 @@
-<div class="card">
-
-  <!-- Cabecera de la tarjeta -->
-  <div class="card-header">
-    <div>
-      <h2>Órdenes de trabajo</h2>
-      <p>{{ ordenesFiltradas.length }} de {{ ordenes.length }} órdenes en el sistema · vista según rol ({{ etiquetaRol[rolActual] }})</p>
-    </div>
-    <div class="header-actions">
-      <button class="btn-refresh" type="button" (click)="cargarOrdenes()" [disabled]="cargando" title="Actualizar lista">
-        <span class="material-icons" [class.rotating]="cargando">refresh</span>
+<header class="page-head">
+  <div class="page-head-text">
+    <h1>Órdenes de trabajo</h1>
+    <p>{{ ordenes.length }} órdenes en el sistema · vista de {{ etiquetaRol[rolActual] }}</p>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn-refresh" type="button" (click)="cargarOrdenes()" [disabled]="cargando"
+      aria-label="Actualizar lista" data-tip="Actualizar">
+      <span class="material-icons" [class.rotating]="cargando">refresh</span>
+    </button>
+    @if (puedeCrearOrden()) {
+      <button class="btn-primary" type="button" (click)="abrirModalCreacion()">
+        <span class="material-icons">add</span> Nueva orden
       </button>
-      @if (puedeCrearOrden()) {
-        <button class="btn-primary" type="button" (click)="abrirModalCreacion()">+ Nueva orden</button>
-      }
-    </div>
+    }
+  </div>
+</header>
+
+<section class="panel">
+  <!-- Filtro rápido por estado -->
+  <div class="chips" role="tablist" aria-label="Filtrar por estado">
+    <button type="button" class="chip" role="tab" [class.activo]="filtroEstado === ''"
+      [attr.aria-selected]="filtroEstado === ''" (click)="filtrarEstado('')">
+      Todas <span class="chip-n">{{ ordenes.length }}</span>
+    </button>
+    @for (estado of estadosDisponibles; track estado) {
+      <button type="button" class="chip" role="tab" [class.activo]="filtroEstado === estado"
+        [attr.aria-selected]="filtroEstado === estado" (click)="filtrarEstado(estado)">
+        <span class="punto" [class]="'estado-' + claseCssEstado[estado]"></span>
+        {{ etiquetaEstado[estado] }} <span class="chip-n">{{ conteoPorEstado[estado] }}</span>
+      </button>
+    }
   </div>
 
-  <!-- Mensajes de Notificación -->
-  @if (mensajeExito) {
-    <div class="alert alert-success">
-      <span class="material-icons">check_circle</span>
-      <span>{{ mensajeExito }}</span>
-      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
-    </div>
-  }
-  @if (mensajeError) {
-    <div class="alert alert-danger">
-      <span class="material-icons">error_outline</span>
-      <span>{{ mensajeError }}</span>
-      <button type="button" class="btn-close-alert" (click)="limpiarMensajes()">×</button>
-    </div>
-  }
-
-  <!-- Barra de Filtros -->
-  <div class="filters">
+  <div class="toolbar">
     <div class="search-input-wrapper">
       <span class="material-icons search-icon">search</span>
-      <input
-        type="search"
-        placeholder="Buscar por cliente, N° orden o labor..."
-        [(ngModel)]="terminoBusqueda"
-      />
+      <input type="search" placeholder="Buscar por cliente, N° de orden o servicio" aria-label="Buscar órdenes"
+        [(ngModel)]="terminoBusqueda" (ngModelChange)="pagina = 1" />
+      @if (terminoBusqueda) {
+        <button type="button" class="btn-limpiar-busqueda" (click)="terminoBusqueda = ''" aria-label="Limpiar búsqueda">
+          <span class="material-icons">close</span>
+        </button>
+      }
     </div>
 
-    <select [(ngModel)]="filtroEstado">
-      <option value="">Todos los estados</option>
-      @for (estado of estadosDisponibles; track estado) {
-        <option [value]="estado">{{ etiquetaEstado[estado] }}</option>
+    <div class="toolbar-filters">
+      <label class="filtro">
+        Desde
+        <input type="date" [(ngModel)]="fechaDesde" (ngModelChange)="pagina = 1" [max]="fechaHasta || null" aria-label="Fecha desde" />
+      </label>
+      <label class="filtro">
+        Hasta
+        <input type="date" [(ngModel)]="fechaHasta" (ngModelChange)="pagina = 1" [min]="fechaDesde || null" aria-label="Fecha hasta" />
+      </label>
+      @if (hayFiltros) {
+        <button type="button" class="btn-secondary btn-sm" (click)="limpiarFiltros()">
+          <span class="material-icons">filter_alt_off</span> Limpiar
+        </button>
       }
-    </select>
-
-    <div class="date-filters">
-      <label class="date-label">Desde:</label>
-      <input type="date" [(ngModel)]="fechaDesde" />
-      <label class="date-label">Hasta:</label>
-      <input type="date" [(ngModel)]="fechaHasta" />
     </div>
   </div>
 
-  <!-- Tabla de Órdenes de Trabajo -->
+  @if (mensajeError) {
+    <div class="alert alert-danger" role="alert">
+      <span class="material-icons">error_outline</span>
+      <span>{{ mensajeError }}</span>
+      <button type="button" class="btn-secondary btn-sm" (click)="cargarOrdenes()">Reintentar</button>
+    </div>
+  }
+
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
           <th>N°</th>
           <th>Cliente</th>
-          <th>Servicio / Labor</th>
-          <th>Cuadrilla / Técnico</th>
+          <th>Servicio</th>
+          <th>Cuadrilla</th>
           <th>Estado</th>
           <th>Creada</th>
           <th class="actions-col">Acciones</th>
         </tr>
       </thead>
       <tbody>
-        @if (cargando) {
-          <tr>
-            <td colspan="7" class="loading-cell">
-              <div class="spinner-small"></div>
-              <span>Consultando órdenes en digitalfix-ms-workorders...</span>
-            </td>
-          </tr>
-        } @else {
-          @for (orden of ordenesFiltradas; track orden.idOrdenTrabajo) {
+        @if (cargando && !ordenes.length) {
+          @for (fila of filasFantasma; track fila) {
             <tr>
-              <td class="id-cell">#{{ orden.idOrdenTrabajo }}</td>
-              <td>
-                <div class="client-cell">
+              <td class="celda-skeleton" colspan="7">
+                <span class="skeleton w-90"></span>
+                <span class="skeleton w-50"></span>
+              </td>
+            </tr>
+          }
+        } @else {
+          @for (orden of ordenesFiltradas | paginar: pagina : tamano; track orden.idOrdenTrabajo) {
+            <tr>
+              <td class="id-cell" data-label="N°">#{{ orden.idOrdenTrabajo }}</td>
+              <td class="col-principal">
+                <div class="main-cell">
                   <strong>{{ orden.cliente.nombreCompleto }}</strong>
-                  <span class="client-rut">{{ orden.cliente.rut }}</span>
+                  <span class="sub-text nowrap">{{ orden.cliente.rut }}</span>
                 </div>
               </td>
-              <td>
-                <span class="service-desc">
-                  {{ obtenerDescripcionServicio(orden) }}
-                </span>
+              <td data-label="Servicio">
+                <span class="clamp-2 service-desc">{{ obtenerDescripcionServicio(orden) }}</span>
               </td>
-              <td>
-                <span class="technician-info">
-                  {{ orden.cuadrilla?.nombre || 'Sin cuadrilla asignada' }}
-                </span>
+              <td data-label="Cuadrilla" class="nowrap">
+                @if (orden.cuadrilla?.nombre) {
+                  {{ orden.cuadrilla?.nombre }}
+                } @else {
+                  <span class="sub-text">Sin asignar</span>
+                }
               </td>
-              <td>
-                <span class="badge" [class]="claseCssEstado[orden.estado]">
-                  {{ etiquetaEstado[orden.estado] }}
-                </span>
+              <td data-label="Estado">
+                <span class="badge" [class]="claseCssEstado[orden.estado]">{{ etiquetaEstado[orden.estado] }}</span>
               </td>
-              <td>{{ orden.fechaIngreso | date:'d MMM, HH:mm' }}</td>
-              <td>
+              <td data-label="Creada" class="sub-text nowrap">{{ orden.fechaIngreso | date:'d MMM, HH:mm' }}</td>
+              <td class="col-acciones">
                 <div class="row-actions">
                   @if (puedeOperar() && siguienteAccion(orden)) {
-                    <button
-                      class="btn-primary"
-                      type="button"
-                      [disabled]="procesandoAccion"
-                      (click)="avanzarEstado(orden)"
-                    >
+                    <button class="btn-primary btn-sm" type="button" [disabled]="procesandoAccion" (click)="avanzarEstado(orden)">
                       {{ siguienteAccion(orden) }}
                     </button>
                   }
                   @if (puedeCancelar(orden)) {
-                    <button
-                      class="btn-ghost"
-                      type="button"
-                      [disabled]="procesandoAccion"
-                      (click)="cancelarOrden(orden)"
-                    >
-                      Cancelar
+                    <button class="accion accion-eliminar" type="button" [disabled]="procesandoAccion"
+                      (click)="cancelarOrden(orden)" aria-label="Cancelar orden" data-tip="Cancelar orden">
+                      <span class="material-icons">block</span>
                     </button>
                   }
-                  <button class="btn-secondary" type="button" (click)="abrirDetalle(orden)">
-                    Ver detalle
+                  <button class="accion accion-ver" type="button" (click)="abrirDetalle(orden)"
+                    aria-label="Ver detalle" data-tip="Ver detalle">
+                    <span class="material-icons">visibility</span>
                   </button>
                 </div>
               </td>
@@ -138,7 +140,17 @@
             <tr>
               <td colspan="7" class="empty-hint">
                 <span class="material-icons empty-icon">assignment_late</span>
-                <p>No se encontraron órdenes de trabajo que coincidan con los filtros aplicados.</p>
+                @if (ordenes.length) {
+                  <p>Ninguna orden coincide con los filtros aplicados.</p>
+                  <button type="button" class="btn-secondary" (click)="limpiarFiltros()">Limpiar filtros</button>
+                } @else {
+                  <p>Todavía no hay órdenes de trabajo.</p>
+                  @if (puedeCrearOrden() && !mensajeError) {
+                    <button type="button" class="btn-primary" (click)="abrirModalCreacion()">
+                      <span class="material-icons">add</span> Crear la primera
+                    </button>
+                  }
+                }
               </td>
             </tr>
           }
@@ -146,22 +158,30 @@
       </tbody>
     </table>
   </div>
-</div>
+
+  <app-paginador [total]="ordenesFiltradas.length" [(pagina)]="pagina" [(tamano)]="tamano" />
+</section>
 
 <!-- =========================================================
      MODAL CREAR NUEVA ORDEN DE TRABAJO (POST /api/ordenes-trabajo)
      ========================================================= -->
 @if (modalCreacionAbierto) {
-  <div class="overlay open" (click)="cerrarModalCreacion()">
-    <div class="modal modal-form" (click)="$event.stopPropagation()">
+  <div class="overlay" (click)="cerrarModalCreacion()">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-nueva-orden" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Nueva Orden de Trabajo</h3>
-        <span class="material-icons close-btn" (click)="cerrarModalCreacion()">close</span>
+        <h3 id="titulo-nueva-orden">Nueva orden de trabajo</h3>
+        <button type="button" class="material-icons close-btn" (click)="cerrarModalCreacion()" aria-label="Cerrar">close</button>
       </div>
-      <p class="modal-sub">Registra una orden de servicio técnico para terreno en digitalfix-ms-workorders.</p>
+      <p class="modal-sub">Registra una orden de servicio técnico en terreno. Los campos con * son obligatorios.</p>
+
+      @if (mensajeErrorCreacion) {
+        <div class="alert alert-danger" role="alert">
+          <span class="material-icons">error_outline</span>
+          <span>{{ mensajeErrorCreacion }}</span>
+        </div>
+      }
 
       <form (ngSubmit)="guardarNuevaOrden()" class="modal-body-form">
-        <!-- Selector de Cliente -->
         <div class="form-field">
           <label for="clienteSelect">Cliente solicitante *</label>
           <select id="clienteSelect" [(ngModel)]="formularioNuevaOrden.idCliente" name="idCliente" required>
@@ -172,7 +192,6 @@
           </select>
         </div>
 
-        <!-- Servicio del catálogo (GET /api/servicios?soloActivos=true) -->
         <div class="form-field">
           <label for="servicioSelect">Servicio a realizar *</label>
           <select id="servicioSelect" [(ngModel)]="formularioNuevaOrden.idServicio" name="idServicio" required>
@@ -184,28 +203,20 @@
             }
           </select>
           @if (servicioSeleccionado; as srv) {
-            <span class="field-hint">
-              {{ srv.descripcion || srv.codigo }} · Tarifa: ${{ srv.tarifa | number:'1.0-0' }} CLP
-            </span>
+            <span class="form-hint">{{ srv.descripcion || srv.codigo }} · Tarifa: ${{ srv.tarifa | number:'1.0-0' }} CLP</span>
           }
         </div>
 
-        <!-- Observaciones -->
         <div class="form-field">
-          <label for="observaciones">Observaciones adicionales</label>
-          <textarea
-            id="observaciones"
-            name="observaciones"
-            rows="3"
-            [(ngModel)]="formularioNuevaOrden.observaciones"
-            placeholder="Detalles sobre acceso a la faena, horarios, equipo específico..."
-          ></textarea>
+          <label for="observaciones">Observaciones</label>
+          <textarea id="observaciones" name="observaciones" rows="3" [(ngModel)]="formularioNuevaOrden.observaciones"
+            placeholder="Acceso a la faena, horarios, equipo específico..."></textarea>
         </div>
 
-        <!-- Acciones del Modal -->
         <div class="modal-actions">
           <button type="button" class="btn-secondary" (click)="cerrarModalCreacion()">Cancelar</button>
-          <button type="submit" class="btn-primary" [disabled]="guardandoOrden">
+          <button type="submit" class="btn-primary"
+            [disabled]="guardandoOrden || !formularioNuevaOrden.idCliente || !formularioNuevaOrden.idServicio">
             {{ guardandoOrden ? 'Creando orden...' : 'Crear orden' }}
           </button>
         </div>
@@ -218,41 +229,56 @@
      MODAL DETALLE COMPLETO Y TIMELINE (GET /api/ordenes-trabajo/{id})
      ========================================================= -->
 @if (ordenSeleccionada) {
-  <div class="overlay open" (click)="cerrarModalDetalle()">
-    <div class="modal modal-detail" (click)="$event.stopPropagation()">
+  <div class="overlay" (click)="cerrarModalDetalle()">
+    <div class="modal modal-detail" role="dialog" aria-modal="true" aria-labelledby="titulo-detalle" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title-wrap">
-          <h3>Orden de Trabajo #{{ ordenSeleccionada.idOrdenTrabajo }}</h3>
-          <span class="badge" [class]="claseCssEstado[ordenSeleccionada.estado]">
-            {{ etiquetaEstado[ordenSeleccionada.estado] }}
-          </span>
+          <h3 id="titulo-detalle">Orden #{{ ordenSeleccionada.idOrdenTrabajo }}</h3>
+          <span class="badge" [class]="claseCssEstado[ordenSeleccionada.estado]">{{ etiquetaEstado[ordenSeleccionada.estado] }}</span>
         </div>
-        <span class="material-icons close-btn" (click)="cerrarModalDetalle()">close</span>
+        <button type="button" class="material-icons close-btn" (click)="cerrarModalDetalle()" aria-label="Cerrar">close</button>
       </div>
 
-      <!-- Resumen de Cliente y Cuadrilla -->
+      <!-- Progreso del ciclo de vida -->
+      @if (ordenSeleccionada.estado !== 'CANCELADA') {
+        <ol class="progreso" aria-label="Avance de la orden">
+          @for (paso of flujo; track paso; let i = $index) {
+            <li [class.hecho]="i < indiceEstado(ordenSeleccionada)" [class.actual]="i === indiceEstado(ordenSeleccionada)">
+              <span class="progreso-punto"></span>
+              <span class="progreso-texto">{{ etiquetaEstado[paso] }}</span>
+            </li>
+          }
+        </ol>
+      }
+
       <div class="detail-summary-card">
         <div class="summary-item">
-          <span class="summary-label">Cliente:</span>
+          <span class="summary-label">Cliente</span>
           <strong>{{ ordenSeleccionada.cliente.nombreCompleto }}</strong>
           <span class="summary-sub">{{ ordenSeleccionada.cliente.rut }}</span>
         </div>
         <div class="summary-item">
-          <span class="summary-label">Cuadrilla asignada:</span>
+          <span class="summary-label">Cuadrilla</span>
           <strong>{{ ordenSeleccionada.cuadrilla?.nombre || 'Sin cuadrilla' }}</strong>
           <span class="summary-sub">Estado: {{ ordenSeleccionada.cuadrilla?.estado || '—' }}</span>
         </div>
         <div class="summary-item">
-          <span class="summary-label">Fecha de Ingreso:</span>
+          <span class="summary-label">Ingreso</span>
           <strong>{{ ordenSeleccionada.fechaIngreso | date:'d MMMM y, HH:mm' }}</strong>
         </div>
         <div class="summary-item">
-          <span class="summary-label">Total Mano de Obra:</span>
+          <span class="summary-label">Total mano de obra</span>
           <strong class="price-highlight">${{ ordenSeleccionada.totalManoObra | number:'1.0-0' }} CLP</strong>
         </div>
       </div>
 
-      <!-- Observaciones -->
+      @if (mensajeErrorDetalle) {
+        <div class="alert alert-danger" role="alert">
+          <span class="material-icons">error_outline</span>
+          <span>{{ mensajeErrorDetalle }}</span>
+        </div>
+      }
+
       @if (ordenSeleccionada.observaciones) {
         <div class="detail-block">
           <h4>Observaciones técnicas</h4>
@@ -260,41 +286,27 @@
         </div>
       }
 
-      <!-- Servicios asociados -->
       @if (ordenSeleccionada.servicios.length > 0) {
         <div class="detail-block">
-          <h4>Labores y servicios contratados</h4>
+          <h4>Servicios contratados</h4>
           <ul class="services-list">
             @for (srv of ordenSeleccionada.servicios; track srv.idDetalle) {
               <li>
                 <span>{{ nombreServicio(srv.idServicio, srv.descripcionManoObra) }}</span>
-                <strong>${{ srv.precioManoObra | number:'1.0-0' }} CLP</strong>
+                <strong class="money">${{ srv.precioManoObra | number:'1.0-0' }}</strong>
               </li>
             }
           </ul>
         </div>
       }
 
-      @if (mensajeExitoDetalle) {
-        <div class="alert alert-success">
-          <span class="material-icons">check_circle</span>
-          <span>{{ mensajeExitoDetalle }}</span>
-        </div>
-      }
-      @if (mensajeErrorDetalle) {
-        <div class="alert alert-danger">
-          <span class="material-icons">error_outline</span>
-          <span>{{ mensajeErrorDetalle }}</span>
-        </div>
-      }
-
       <!-- Asignación (PUT /api/ordenes-trabajo/{id}/cuadrilla): pasa la orden a ASIGNADA y descuenta el stock -->
       @if (puedeOperar() && ordenSeleccionada.estado === 'CREADA') {
-        <div class="detail-block">
+        <div class="detail-block bloque-accion">
           <h4>Asignar cuadrilla</h4>
           @if (cuadrillasDisponibles.length) {
             <div class="inline-form">
-              <select name="cuadrilla" [(ngModel)]="idCuadrillaElegida" [disabled]="operandoDetalle">
+              <select name="cuadrilla" [(ngModel)]="idCuadrillaElegida" [disabled]="operandoDetalle" aria-label="Cuadrilla">
                 @for (c of cuadrillasDisponibles; track c.idCuadrilla) {
                   <option [ngValue]="c.idCuadrilla">{{ c.nombre }} · {{ c.cantidadMiembros }} integrantes</option>
                 }
@@ -304,7 +316,7 @@
                 {{ operandoDetalle ? 'Asignando...' : 'Asignar' }}
               </button>
             </div>
-            <span class="field-hint">
+            <span class="form-hint">
               @if (ordenSeleccionada.repuestos.length) {
                 Al asignar se descuenta del stock cada repuesto de esta orden. Si alguno no alcanza, la orden no se asigna.
               } @else {
@@ -312,7 +324,7 @@
               }
             </span>
           } @else {
-            <p class="field-hint">No hay cuadrillas disponibles (todas están en terreno o inactivas).</p>
+            <p class="form-hint">No hay cuadrillas disponibles (todas están en terreno o inactivas).</p>
           }
         </div>
       }
@@ -323,22 +335,24 @@
           <h4>
             Repuestos
             @if (ordenSeleccionada.repuestos.length) {
-              <span class="field-hint">· {{ stockComprometido(ordenSeleccionada) ? 'descontados del stock' : 'se descuentan al asignar' }}</span>
+              <span class="form-hint">· {{ stockComprometido(ordenSeleccionada) ? 'descontados del stock' : 'se descuentan al asignar' }}</span>
             }
           </h4>
           @if (ordenSeleccionada.repuestos.length) {
             <ul class="services-list">
               @for (rep of ordenSeleccionada.repuestos; track rep.idDetalle) {
                 <li>
-                  <span>
-                    {{ nombreRepuesto(rep) }}
-                    <span class="field-hint">· {{ nombreProveedor(rep.idProveedor) }}</span>
+                  <span class="main-cell">
+                    <span>{{ nombreRepuesto(rep) }}</span>
+                    <span class="sub-text">{{ nombreProveedor(rep.idProveedor) }}</span>
                   </span>
                   <span class="repuesto-acciones">
-                    <strong>× {{ rep.cantidadUtilizada }}</strong>
+                    <strong class="stock-num">× {{ rep.cantidadUtilizada }}</strong>
                     @if (puedeOperar() && esEditable(ordenSeleccionada)) {
-                      <button type="button" class="btn-ghost" [disabled]="operandoDetalle"
-                        (click)="quitarRepuesto(ordenSeleccionada, rep)">Quitar</button>
+                      <button type="button" class="accion accion-eliminar" [disabled]="operandoDetalle"
+                        (click)="quitarRepuesto(ordenSeleccionada, rep)" aria-label="Quitar repuesto" data-tip="Quitar">
+                        <span class="material-icons">delete_outline</span>
+                      </button>
                     }
                   </span>
                 </li>
@@ -347,14 +361,14 @@
           }
 
           @if (puedeOperar() && esEditable(ordenSeleccionada)) {
-            <div class="inline-form">
-              <select name="repuesto" [(ngModel)]="formularioRepuesto.idRepuesto" [disabled]="operandoDetalle">
+            <div class="inline-form agregar-repuesto">
+              <select name="repuesto" [(ngModel)]="formularioRepuesto.idRepuesto" [disabled]="operandoDetalle" aria-label="Repuesto">
                 <option [ngValue]="null" disabled>{{ repuestosCatalogo.length ? 'Repuesto del catálogo...' : 'Cargando catálogo...' }}</option>
                 @for (r of repuestosCatalogo; track r.idRepuesto) {
                   <option [ngValue]="r.idRepuesto">{{ r.codigo }} · {{ r.nombre }} ({{ r.stockDisponible }} en stock)</option>
                 }
               </select>
-              <select name="proveedor" [(ngModel)]="formularioRepuesto.idProveedor" [disabled]="operandoDetalle">
+              <select name="proveedor" [(ngModel)]="formularioRepuesto.idProveedor" [disabled]="operandoDetalle" aria-label="Proveedor">
                 <option [ngValue]="null" disabled>{{ proveedoresProductos.length ? 'Proveedor...' : 'Sin proveedores de productos' }}</option>
                 @for (p of proveedoresProductos; track p.idProveedor) {
                   <option [ngValue]="p.idProveedor">{{ p.razonSocial }}</option>
@@ -363,10 +377,12 @@
               <input class="input-cantidad" name="cantidad" type="number" min="1" max="9999" step="1"
                 [(ngModel)]="formularioRepuesto.cantidad" [disabled]="operandoDetalle" aria-label="Cantidad" />
               <button type="button" class="btn-secondary" [disabled]="operandoDetalle || !formularioRepuesto.idRepuesto"
-                (click)="agregarRepuesto(ordenSeleccionada)">Agregar</button>
+                (click)="agregarRepuesto(ordenSeleccionada)">
+                <span class="material-icons">add</span> Agregar
+              </button>
             </div>
             @if (repuestoElegido; as r) {
-              <span class="field-hint" [class.text-alerta]="r.stockDisponible < (formularioRepuesto.cantidad ?? 0)">
+              <span class="form-hint" [class.text-alerta]="r.stockDisponible < (formularioRepuesto.cantidad ?? 0)">
                 {{ r.stockDisponible }} disponibles (mínimo {{ r.stockMinimo }}).
                 {{ stockComprometido(ordenSeleccionada) ? 'La orden ya está asignada: se descuenta al agregar.' : 'Se descuenta al asignar la orden.' }}
               </span>
@@ -375,21 +391,29 @@
         </div>
       }
 
-      <!-- Timeline Histórico -->
       <div class="detail-block">
         <h4>Historial de eventos</h4>
-        <ul class="timeline">
-          @for (evento of ordenSeleccionada.historial; track $index) {
-            <li>
-              <div class="evento">{{ evento.descripcion }}</div>
-              <div class="meta">{{ evento.actor }} · {{ evento.fecha | date:'d MMM, HH:mm' }}</div>
-            </li>
-          }
-        </ul>
+        @if (ordenSeleccionada.historial?.length) {
+          <ul class="timeline">
+            @for (evento of ordenSeleccionada.historial; track $index) {
+              <li>
+                <div class="evento">{{ evento.descripcion }}</div>
+                <div class="meta">{{ evento.actor }} · {{ evento.fecha | date:'d MMM, HH:mm' }}</div>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="form-hint">Sin eventos registrados.</p>
+        }
       </div>
 
-      <div class="modal-footer-actions">
-        <button type="button" class="btn-secondary" (click)="cerrarModalDetalle()">Cerrar</button>
+      <div class="modal-actions">
+        @if (puedeOperar() && siguienteAccion(ordenSeleccionada) && ordenSeleccionada.estado !== 'CREADA') {
+          <button type="button" class="btn-primary" [disabled]="procesandoAccion" (click)="avanzarEstado(ordenSeleccionada)">
+            {{ siguienteAccion(ordenSeleccionada) }}
+          </button>
+        }
+        <button type="button" class="btn-secondary" (click)="cerrarModalDetalle()">Volver</button>
       </div>
     </div>
   </div>

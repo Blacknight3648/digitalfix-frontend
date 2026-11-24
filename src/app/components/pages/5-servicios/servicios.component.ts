@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ServicioCatalogo, ServicioCatalogoPeticion } from '@remote/dto/catalogo-servicio.dto';
@@ -6,6 +6,9 @@ import { mensajeDeError } from '@utils/mensaje-error';
 import { ServicioCatalogoServicios } from '@remote/service/catalogo/servicio-catalogo.service';
 import { CAMPOS_CHILE } from '@components/ui/directives/campos-chile.directive';
 import { capitalizarPrimera } from '@utils/formato-chile';
+import { PAGINACION } from '@components/ui/paginador';
+import { NotificacionesService } from '@components/ui/notificaciones/notificaciones.service';
+import { ConfirmacionService } from '@components/ui/confirmacion/confirmacion.service';
 
 const FORMULARIO_VACIO: ServicioCatalogoPeticion = {
     nombre: '',
@@ -19,18 +22,23 @@ const FORMULARIO_VACIO: ServicioCatalogoPeticion = {
 @Component({
     standalone: true,
     selector: 'app-servicios',
-    imports: [CommonModule, FormsModule, ...CAMPOS_CHILE],
+    imports: [CommonModule, FormsModule, ...CAMPOS_CHILE, ...PAGINACION],
     templateUrl: './servicios.component.html',
 })
 export class ServiciosComponent implements OnInit {
     private readonly servicio = inject(ServicioCatalogoServicios);
+    private readonly notificaciones = inject(NotificacionesService);
+    private readonly confirmacion = inject(ConfirmacionService);
+    readonly filasFantasma = [1, 2, 3, 4, 5];
 
     servicios: ServicioCatalogo[] = [];
     cargando = false;
     guardando = false;
     mensajeError = '';
-    mensajeExito = '';
     terminoBusqueda = '';
+    filtroEstado: '' | 'activos' | 'inactivos' = '';
+    pagina = 1;
+    tamano = 10;
 
     modalAbierto = false;
     // null = creando; con id = editando ese servicio.
@@ -45,11 +53,9 @@ export class ServiciosComponent implements OnInit {
 
     get serviciosFiltrados(): ServicioCatalogo[] {
         const termino = this.terminoBusqueda.trim().toLowerCase();
-        if (!termino) {
-            return this.servicios;
-        }
         return this.servicios.filter((s) =>
-            [s.codigo, s.nombre, s.descripcion].some((campo) => campo?.toLowerCase().includes(termino)),
+            (!this.filtroEstado || s.activo === (this.filtroEstado === 'activos'))
+            && (!termino || [s.codigo, s.nombre, s.descripcion].some((campo) => campo?.toLowerCase().includes(termino))),
         );
     }
 
@@ -59,6 +65,9 @@ export class ServiciosComponent implements OnInit {
 
     cargar(): void {
         this.cargando = true;
+        if (!this.modalAbierto) {
+            this.mensajeError = '';
+        }
         this.servicio.listar().subscribe({
             next: (servicios) => {
                 this.servicios = servicios;
@@ -113,9 +122,9 @@ export class ServiciosComponent implements OnInit {
             next: (guardado) => {
                 this.guardando = false;
                 this.modalAbierto = false;
-                this.mensajeExito = editando
+                this.notificaciones.exito(editando
                     ? `Servicio ${guardado.nombre} actualizado.`
-                    : `Servicio ${guardado.nombre} creado.`;
+                    : `Servicio ${guardado.nombre} creado.`);
                 this.cargar();
             },
             error: (err) => {
@@ -125,22 +134,33 @@ export class ServiciosComponent implements OnInit {
         });
     }
 
-    eliminar(servicio: ServicioCatalogo): void {
-        if (!confirm(`¿Eliminar el servicio ${servicio.nombre}? Si ya se usó en órdenes, el sistema pedirá desactivarlo.`)) {
+    async eliminar(servicio: ServicioCatalogo): Promise<void> {
+        const confirmada = await this.confirmacion.preguntar({
+            titulo: `¿Eliminar ${servicio.nombre}?`,
+            mensaje: 'Si ya se usó en órdenes, el sistema pedirá desactivarlo en vez de eliminarlo.',
+            confirmar: 'Eliminar',
+            peligro: true,
+        });
+        if (!confirmada) {
             return;
         }
-        this.limpiarMensajes();
         this.servicio.eliminar(servicio.idServicio).subscribe({
             next: () => {
-                this.mensajeExito = `Servicio ${servicio.nombre} eliminado.`;
+                this.notificaciones.exito(`Servicio ${servicio.nombre} eliminado.`);
                 this.cargar();
             },
-            error: (err) => (this.mensajeError = mensajeDeError(err, 'eliminar el servicio')),
+            error: (err) => this.notificaciones.error(mensajeDeError(err, 'eliminar el servicio')),
         });
     }
 
     limpiarMensajes(): void {
         this.mensajeError = '';
-        this.mensajeExito = '';
+    }
+
+    @HostListener('document:keydown.escape')
+    cerrarConEscape(): void {
+        if (!this.confirmacion.actual()) {
+            this.cerrarModal();
+        }
     }
 }

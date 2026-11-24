@@ -49,7 +49,7 @@ export const CLASE_CSS_ESTADO_ORDEN: Record<EstadoOrden, string> = {
 };
 
 export const ETIQUETA_ACCION_SIGUIENTE_ORDEN: Partial<Record<EstadoOrden, string>> = {
-    CREADA: 'Asignar técnico / cuadrilla',
+    CREADA: 'Asignar cuadrilla',
     ASIGNADA: 'Iniciar desplazamiento',
     EN_DESPLAZAMIENTO: 'Iniciar ejecución',
     EN_EJECUCION: 'Cerrar orden',

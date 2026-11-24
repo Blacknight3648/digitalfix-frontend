@@ -5,6 +5,8 @@ import { mensajeDeError } from '@utils/mensaje-error';
 import { ColaRabbit, ETIQUETA_LISTENER, colasDe } from '@models/mensajeria.model';
 import { ListenerRabbit } from '@remote/dto/mensajeria.dto';
 import { ServicioMensajeria } from '@remote/service/mensajeria/servicio-mensajeria.service';
+import { NotificacionesService } from '@components/ui/notificaciones/notificaciones.service';
+import { ConfirmacionService } from '@components/ui/confirmacion/confirmacion.service';
 
 // Panel de mensajería (ms-admin-queues vía BFF): estado de los consumidores de ms-notify
 // y de sus colas, con control de listeners y purga de colas de cuarentena (DLQ).
@@ -16,6 +18,8 @@ import { ServicioMensajeria } from '@remote/service/mensajeria/servicio-mensajer
 })
 export class MensajeriaComponent implements OnInit {
     private readonly servicio = inject(ServicioMensajeria);
+    private readonly notificaciones = inject(NotificacionesService);
+    private readonly confirmacion = inject(ConfirmacionService);
 
     readonly etiqueta = ETIQUETA_LISTENER;
 
@@ -25,7 +29,6 @@ export class MensajeriaComponent implements OnInit {
     // id del listener o nombre de la cola con una acción en curso
     ocupado = '';
     mensajeError = '';
-    mensajeExito = '';
 
     ngOnInit(): void {
         this.cargar();
@@ -38,6 +41,7 @@ export class MensajeriaComponent implements OnInit {
     // Las colas se descubren a partir de los listeners: cada consumidor informa las que escucha.
     cargar(): void {
         this.cargando = true;
+        this.mensajeError = '';
         this.servicio
             .listarListeners()
             .pipe(
@@ -81,42 +85,41 @@ export class MensajeriaComponent implements OnInit {
     }
 
     controlar(listener: ListenerRabbit, accion: 'pause' | 'resume'): void {
-        this.limpiarMensajes();
         this.ocupado = listener.listenerId;
         this.servicio.controlarListener(listener.listenerId, accion).subscribe({
             next: (r) => {
                 this.ocupado = '';
-                this.mensajeExito = r.message;
+                this.notificaciones.exito(r.message);
                 this.cargar();
             },
             error: (err) => {
                 this.ocupado = '';
-                this.mensajeError = mensajeDeError(err, 'controlar el listener');
+                this.notificaciones.error(mensajeDeError(err, 'controlar el listener'));
             },
         });
     }
 
-    purgar(cola: ColaRabbit): void {
-        if (!confirm(`¿Vaciar la cola ${cola.nombre}? Se descartan ${cola.mensajes ?? 0} mensaje(s) y no se puede deshacer.`)) {
+    async purgar(cola: ColaRabbit): Promise<void> {
+        const confirmada = await this.confirmacion.preguntar({
+            titulo: `¿Vaciar ${cola.nombre}?`,
+            mensaje: `Se descartan ${cola.mensajes ?? 0} mensaje(s) y no se puede deshacer.`,
+            confirmar: 'Vaciar cola',
+            peligro: true,
+        });
+        if (!confirmada) {
             return;
         }
-        this.limpiarMensajes();
         this.ocupado = cola.nombre;
         this.servicio.purgarCola(cola.nombre).subscribe({
             next: (r) => {
                 this.ocupado = '';
-                this.mensajeExito = `Cola ${cola.nombre} purgada: ${r.purgedMessagesCount} mensaje(s) descartados.`;
+                this.notificaciones.exito(`Cola ${cola.nombre} purgada: ${r.purgedMessagesCount} mensaje(s) descartados.`);
                 this.cargar();
             },
             error: (err) => {
                 this.ocupado = '';
-                this.mensajeError = mensajeDeError(err, 'purgar la cola');
+                this.notificaciones.error(mensajeDeError(err, 'purgar la cola'));
             },
         });
-    }
-
-    limpiarMensajes(): void {
-        this.mensajeError = '';
-        this.mensajeExito = '';
     }
 }

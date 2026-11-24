@@ -1,11 +1,14 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MsalService } from '@azure/msal-angular';
-import { AuthService } from '@contexts/auth/auth.service';
+import { AuthService, backendCaido } from '@contexts/auth/auth.service';
 import { AUTH_REDIRECT_ERROR } from '@contexts/auth/auth-startup';
 import { ocultarPantallaCarga } from '@config/pantalla-carga';
+
+// Correo de soporte al que se envía la alerta cuando el sistema cae.
+const CORREO_SOPORTE = 'sol.medina@gmail.com';
 
 @Component({
     standalone: true,
@@ -19,7 +22,7 @@ export class LoginComponent implements OnInit {
     // así este componente también puede renderizarse sin errores durante el SSR.
     private readonly msalService = inject(MsalService, { optional: true });
     private readonly router = inject(Router);
-    private readonly authService = inject(AuthService);
+    readonly authService = inject(AuthService);
     private readonly redirectError = inject(AUTH_REDIRECT_ERROR, { optional: true });
 
     email = '';
@@ -29,6 +32,11 @@ export class LoginComponent implements OnInit {
     isRedirecting = false;
     showPassword = false;
     rememberMe = false;
+
+    // Estado "Sistema caído": true cuando ms-login no responde tras todos los reintentos.
+    readonly backendCaido = backendCaido;
+    alertaEnviada = false;
+    enviandoAlerta = false;
 
     togglePassword(): void {
         this.showPassword = !this.showPassword;
@@ -52,16 +60,28 @@ export class LoginComponent implements OnInit {
         }
 
         // La respuesta de Microsoft ya se procesó en main.ts (prepareAuth) antes
-        // de arrancar Angular. Con sesión activa se entra directo a home; si el
-        // regreso falló, la sesión local ya quedó limpia y solo se informa.
+        // de arrancar Angular. Con sesión activa esperamos a que ms-login confirme
+        // el rol antes de navegar, así SUPERADMIN no llega a home con rol CLIENTE.
         if (this.msalService.instance.getActiveAccount()) {
             this.authService.syncFromActiveAccount();
-            // replaceUrl: "atrás" desde home no debe volver a mostrar el login.
-            // La pantalla de carga sigue visible hasta que home termina de
-            // cargar (authGuard espera la sesión de ms-login).
-            this.router
-                .navigateByUrl('/home', { replaceUrl: true })
-                .finally(() => ocultarPantallaCarga());
+            this.isRedirecting = true;
+            this.authService.loadSession()
+                .then(() => {
+                    if (backendCaido()) {
+                        // Backend caído: quedarse en login y mostrar panel de alerta.
+                        this.isRedirecting = false;
+                        ocultarPantallaCarga();
+                        return;
+                    }
+                    // replaceUrl: "atrás" desde home no debe volver a mostrar el login.
+                    this.router
+                        .navigateByUrl('/home', { replaceUrl: true })
+                        .finally(() => ocultarPantallaCarga());
+                })
+                .catch(() => {
+                    this.isRedirecting = false;
+                    ocultarPantallaCarga();
+                });
             return;
         }
 
@@ -72,14 +92,46 @@ export class LoginComponent implements OnInit {
         }
     }
 
+    // Abre el cliente de correo con un mensaje prellenado para alertar al soporte.
+    reportarSistemaCaido(): void {
+        this.enviandoAlerta = true;
+        const correo = this.email || this.authService.currentUser()?.email || 'anonimo';
+        const asunto = encodeURIComponent('Sistema DigitalFix caído - Alerta automática');
+        const cuerpo = encodeURIComponent(
+            `El sistema DigitalFix no está disponible.\nUsuario: ${correo}\nFecha: ${new Date().toLocaleString('es-CL')}`,
+        );
+        window.open(`mailto:${CORREO_SOPORTE}?subject=${asunto}&body=${cuerpo}`, '_blank');
+        this.alertaEnviada = true;
+        this.enviandoAlerta = false;
+    }
+
+    // Vuelve a intentar conectarse al backend desde el panel de sistema caído.
+    reintentarConexion(): void {
+        this.alertaEnviada = false;
+        this.isRedirecting = true;
+        this.authService.reintentarConexion()
+            .then(() => {
+                if (!backendCaido()) {
+                    this.router
+                        .navigateByUrl('/home', { replaceUrl: true })
+                        .finally(() => ocultarPantallaCarga());
+                } else {
+                    this.isRedirecting = false;
+                }
+            })
+            .catch(() => {
+                this.isRedirecting = false;
+            });
+    }
+
     onSubmit(): void {
-        if (!this.email || !this.password) {
-            this.errorMessage = 'Ingresa tu email y tu contraseña.';
+        if (!this.email) {
+            this.errorMessage = 'Ingresa tu correo electrónico institucional.';
             return;
         }
 
         // Las credenciales las valida Microsoft Entra ID; el email ingresado
-        // se envía solo como sugerencia para precargar la pantalla de Microsoft.
+        // se envía como sugerencia (loginHint) para precargar la pantalla de Microsoft.
         this.startLogin(this.email);
     }
 

@@ -1,35 +1,39 @@
-/* La tarjeta base viene de styles/_components.scss; aquí solo lo propio. */
-.card {
-  min-height: calc(100vh - 96px);
-  padding: 0;
-}
-
+/* El panel base viene de styles/_components.scss; aquí solo lo propio. */
 .coming-soon {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--esp-3);
+  min-height: min(60vh, 520px);
+  padding: var(--esp-10) var(--esp-6);
   text-align: center;
-  padding: 64px 32px;
 }
 
-.coming-soon .material-icons {
-  font-size: 40px;
-  color: var(--texto-secundario);
-  margin-bottom: 8px;
+.cs-icono {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--primario-suave);
+  color: var(--primario);
+}
+
+.cs-icono .material-icons {
+  font-size: 36px;
 }
 
 .coming-soon h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #1a1a1a;
+  margin: var(--esp-1) 0 0;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semi);
+  color: var(--texto);
 }
 
 .coming-soon p {
-  margin: 0;
-  max-width: 45ch;
-  font-size: 14px;
+  margin: 0 0 var(--esp-2);
+  max-width: 48ch;
+  font-size: var(--fs-base);
   color: var(--texto-secundario);
 }
