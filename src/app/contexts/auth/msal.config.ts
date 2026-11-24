@@ -53,10 +53,13 @@ export function msalInterceptorConfigFactory(): MsalInterceptorConfiguration {
 
   // Todas las llamadas van al BFF, que valida el access token (scope
   // access_as_user) y lo reenvía a los microservicios.
+  // Una sola entrada: "/*" ya cubre "/api/*"; dos patrones que coinciden con la
+  // misma URL hacen que MSAL avise "More than 1 matching scopes for endpoint found".
   protectedResourceMap.set(`${environment.bffUrl}/*`, environment.azure.protectedResourceScopes);
 
   return {
     interactionType: InteractionType.Redirect,
     protectedResourceMap,
+    strictMatching: true,
   };
 }
