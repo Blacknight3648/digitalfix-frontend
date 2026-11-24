@@ -46,30 +46,18 @@ export function msalInstanceFactory(): IPublicClientApplication {
  * Pide el token con acquireTokenSilent: si el access token está por vencer,
  * MSAL lo renueva con el refresh token sin interrumpir al usuario; solo si la
  * sesión de Microsoft expiró (InteractionRequired) redirige a iniciar sesión.
+ *
+ * Con strictMatching activo, `${environment.bffUrl}/api/*` cubre todas las rutas
+ * bajo /api/ (como /api/v1/login/me) hacia el BFF sin interceptar recursos estáticos,
+ * y sin generar el warning "More than 1 matching scopes for endpoint found".
  */
 export function msalInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap = new Map<string, Array<string> | null>();
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-  // Todas las llamadas van al BFF, que valida el access token (scope
-  // access_as_user) y lo reenvía a los microservicios.
-  // Una sola entrada: "/*" ya cubre "/api/*"; dos patrones que coinciden con la
-  // misma URL hacen que MSAL avise "More than 1 matching scopes for endpoint found".
-  protectedResourceMap.set(`${environment.bffUrl}/*`, environment.azure.protectedResourceScopes);
-=======
-=======
->>>>>>> origin/develop
-  // Con strictMatching activo, `${environment.bffUrl}/api/*` cubre todas las rutas
-  // bajo /api/ (como /api/v1/login/me) hacia el BFF sin interceptar recursos estáticos.
   protectedResourceMap.set(
     `${environment.bffUrl}/api/*`,
     environment.azure.protectedResourceScopes,
   );
-<<<<<<< HEAD
->>>>>>> origin/develop
-=======
->>>>>>> origin/develop
 
   return {
     interactionType: InteractionType.Redirect,
