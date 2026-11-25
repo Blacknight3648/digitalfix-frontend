@@ -1,0 +1,92 @@
+:host { display: block; }
+
+/* ---------- Pestañas ---------- */
+.pestanas {
+  display: flex;
+  gap: var(--esp-1);
+  margin-bottom: var(--esp-4);
+  border-bottom: 1px solid var(--borde);
+}
+.pestana {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-4);
+  margin-bottom: -1px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medio);
+  color: var(--texto-secundario);
+  cursor: pointer;
+  transition: color var(--dur) var(--curva), border-color var(--dur) var(--curva);
+}
+.pestana .material-icons { font-size: 18px; }
+.pestana:hover { color: var(--texto); }
+.pestana.activa { color: var(--primario); border-bottom-color: var(--primario); }
+.pestana:focus-visible { outline: none; box-shadow: var(--anillo-foco); border-radius: var(--radio-sm) var(--radio-sm) 0 0; }
+
+.rango { display: inline-flex; gap: var(--esp-1); }
+.rango .chip, .chips .chip { cursor: pointer; }
+.chips { margin-bottom: var(--esp-3); }
+
+/* ---------- Tabla ---------- */
+.transicion { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.flecha { font-size: 16px; color: var(--texto-tenue); }
+
+.trace {
+  display: inline-block;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--fs-2xs);
+  color: var(--texto-secundario);
+}
+.usuario { word-break: break-all; font-size: var(--fs-sm); }
+
+/* ---------- Línea de tiempo ---------- */
+.timeline { margin: 0; padding: 0; list-style: none; }
+.paso { position: relative; display: flex; gap: var(--esp-3); padding-bottom: var(--esp-5); }
+.paso.ultimo { padding-bottom: 0; }
+/* Conector vertical entre puntos */
+.paso::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 18px;
+  bottom: 2px;
+  width: 2px;
+  background: var(--borde);
+}
+.paso.ultimo::before { display: none; }
+
+.paso-punto {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 4px;
+  border-radius: 50%;
+  border: 2px solid var(--superficie);
+  box-shadow: 0 0 0 1px var(--borde-fuerte);
+  background: var(--creada-fg);
+}
+.paso-punto.asignada { background: var(--asignada-fg); }
+.paso-punto.desplazamiento { background: var(--desplazo-fg); }
+.paso-punto.ejecucion { background: var(--ejecucion-fg); }
+.paso-punto.cerrada { background: var(--cerrada-fg); }
+.paso-punto.cancelada { background: var(--cancelada-fg); }
+
+.paso-cuerpo { display: flex; flex-direction: column; gap: var(--esp-1); min-width: 0; }
+.paso-cabecera { display: flex; align-items: center; gap: var(--esp-2); flex-wrap: wrap; }
+.paso-detalle { display: flex; gap: var(--esp-2) var(--esp-3); flex-wrap: wrap; }
+.paso-detalle .trace { max-width: 220px; }
+
+@media (max-width: 640px) {
+  .pestana { flex: 1; justify-content: center; padding: var(--esp-2); }
+  .toolbar-filters { width: 100%; }
+}

@@ -1,0 +1,283 @@
+<header class="page-head">
+  <div class="page-head-text">
+    <h1>Auditoría</h1>
+    <p>
+      @if (pestana === 'ordenes') {
+        {{ eventos.length | number }} cambios de estado · {{ ordenesDistintas | number }} órdenes
+      } @else {
+        Últimos {{ accesos.length }} eventos de acceso registrados por ms-login
+      }
+    </p>
+  </div>
+  <div class="page-head-actions">
+    <button class="btn-secondary" type="button"
+      (click)="pestana === 'ordenes' ? exportarOrdenes() : exportarAccesos()"
+      [disabled]="pestana === 'ordenes' ? !eventosFiltrados.length : !accesosFiltrados.length">
+      <span class="material-icons">download</span> Exportar CSV
+    </button>
+    <button class="btn-refresh" type="button" (click)="actualizar()" [disabled]="cargando" aria-label="Actualizar" data-tip="Actualizar">
+      <span class="material-icons" [class.rotating]="cargando">refresh</span>
+    </button>
+  </div>
+</header>
+
+<nav class="pestanas" role="tablist" aria-label="Tipo de auditoría">
+  <button type="button" role="tab" class="pestana" [class.activa]="pestana === 'ordenes'"
+    [attr.aria-selected]="pestana === 'ordenes'" (click)="cambiarPestana('ordenes')">
+    <span class="material-icons">assignment</span> Órdenes de trabajo
+  </button>
+  <button type="button" role="tab" class="pestana" [class.activa]="pestana === 'accesos'"
+    [attr.aria-selected]="pestana === 'accesos'" (click)="cambiarPestana('accesos')">
+    <span class="material-icons">key</span> Accesos al sistema
+  </button>
+</nav>
+
+@if (pestana === 'ordenes') {
+  @if (errorOrdenes) {
+    <div class="alert alert-danger" role="alert">
+      <span class="material-icons">error_outline</span>
+      <span>{{ errorOrdenes }}</span>
+      <button type="button" class="btn-secondary btn-sm" (click)="actualizar()">Reintentar</button>
+    </div>
+  }
+
+  <section class="panel">
+    <div class="toolbar">
+      <div class="search-input-wrapper">
+        <span class="material-icons search-icon">search</span>
+        <input type="search" [(ngModel)]="busquedaOrden" (ngModelChange)="paginaOrdenes = 1"
+          placeholder="Buscar por N° de orden o trace ID" aria-label="Buscar por número de orden o trace ID" />
+        @if (busquedaOrden) {
+          <button type="button" class="btn-limpiar-busqueda" (click)="busquedaOrden = ''" aria-label="Limpiar búsqueda">
+            <span class="material-icons">close</span>
+          </button>
+        }
+      </div>
+      <div class="toolbar-filters">
+        <select [(ngModel)]="filtroEstado" (ngModelChange)="cambiarEstado()" aria-label="Filtrar por estado nuevo">
+          <option value="">Todos los estados</option>
+          @for (estado of estadosOrden; track estado) {
+            <option [value]="estado">{{ etiquetaEstado(estado) }}</option>
+          }
+        </select>
+        <div class="rango" role="group" aria-label="Ventana de tiempo">
+          @for (opcion of rangos; track opcion.valor) {
+            <button type="button" class="chip" [class.activo]="rango === opcion.valor"
+              [attr.aria-pressed]="rango === opcion.valor" (click)="cambiarRango(opcion.valor)">
+              {{ opcion.etiqueta }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha y hora</th>
+            <th>Orden</th>
+            <th>Transición</th>
+            <th>Técnico</th>
+            <th>Cliente</th>
+            <th>Trace ID</th>
+            <th class="actions-col">Detalle</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargandoOrdenes && !ordenesCargadas) {
+            @for (fila of [1, 2, 3, 4]; track fila) {
+              <tr><td class="celda-skeleton" colspan="7"><span class="skeleton w-90"></span><span class="skeleton w-50"></span></td></tr>
+            }
+          } @else {
+            @for (evento of eventosFiltrados | paginar: paginaOrdenes : tamanoOrdenes; track evento.id) {
+              <tr>
+                <td class="col-principal">
+                  <div class="main-cell">
+                    <strong>{{ evento.occurredAt | date: 'dd/MM/yyyy HH:mm:ss' }}</strong>
+                    <span class="sub-text">{{ evento.eventType || 'Cambio de estado' }}</span>
+                  </div>
+                </td>
+                <td data-label="Orden" class="id-cell">#{{ evento.orderId }}</td>
+                <td data-label="Transición">
+                  <div class="transicion">
+                    @if (evento.previousStatus) {
+                      <span class="badge" [class]="claseEstado(evento.previousStatus)">{{ etiquetaEstado(evento.previousStatus) }}</span>
+                      <span class="material-icons flecha" aria-label="a">arrow_forward</span>
+                    }
+                    <span class="badge" [class]="claseEstado(evento.newStatus)">{{ etiquetaEstado(evento.newStatus) }}</span>
+                  </div>
+                </td>
+                <td data-label="Técnico" class="sub-text">{{ evento.assignedTechnicianId ? '#' + evento.assignedTechnicianId : '—' }}</td>
+                <td data-label="Cliente" class="sub-text">{{ evento.clientId ? '#' + evento.clientId : '—' }}</td>
+                <td data-label="Trace ID"><code class="trace" [title]="evento.traceId || ''">{{ evento.traceId || '—' }}</code></td>
+                <td class="col-acciones">
+                  <div class="row-actions">
+                    <button type="button" class="accion accion-ver" (click)="abrirTimeline(evento.orderId)"
+                      [attr.aria-label]="'Ver línea de tiempo de la orden ' + evento.orderId" data-tip="Línea de tiempo">
+                      <span class="material-icons">timeline</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td class="empty-hint" colspan="7">
+                  <span class="material-icons empty-icon">fact_check</span>
+                  <p>
+                    @if (busquedaOrden) {
+                      Ningún evento coincide con "{{ busquedaOrden }}".
+                    } @else {
+                      No hay cambios de estado registrados en la ventana seleccionada.
+                    }
+                  </p>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-paginador [total]="eventosFiltrados.length" [(pagina)]="paginaOrdenes" [(tamano)]="tamanoOrdenes" />
+    @if (eventos.length >= 500) {
+      <p class="form-hint panel-nota">Se muestran los 500 eventos más recientes. Acota la ventana o filtra por estado para ver el resto.</p>
+    }
+  </section>
+} @else {
+  @if (errorAccesos) {
+    <div class="alert alert-danger" role="alert">
+      <span class="material-icons">error_outline</span>
+      <span>{{ errorAccesos }}</span>
+      <button type="button" class="btn-secondary btn-sm" (click)="actualizar()">Reintentar</button>
+    </div>
+  }
+
+  <section class="panel">
+    <div class="toolbar">
+      <div class="search-input-wrapper">
+        <span class="material-icons search-icon">search</span>
+        <input type="search" [(ngModel)]="busquedaAcceso" (ngModelChange)="paginaAccesos = 1"
+          placeholder="Buscar por usuario, IP o motivo" aria-label="Buscar por usuario, IP o motivo" />
+        @if (busquedaAcceso) {
+          <button type="button" class="btn-limpiar-busqueda" (click)="busquedaAcceso = ''" aria-label="Limpiar búsqueda">
+            <span class="material-icons">close</span>
+          </button>
+        }
+      </div>
+    </div>
+    <div class="chips" role="group" aria-label="Filtrar por tipo de evento">
+      <button type="button" class="chip" [class.activo]="!filtroAcceso" (click)="filtrarAcceso('')">
+        Todos <span class="chip-n">{{ accesos.length }}</span>
+      </button>
+      @for (tipo of tiposAcceso; track tipo) {
+        <button type="button" class="chip" [class.activo]="filtroAcceso === tipo" (click)="filtrarAcceso(tipo)">
+          <span class="material-icons">{{ configAcceso(tipo).icono }}</span>
+          {{ configAcceso(tipo).etiqueta }} <span class="chip-n">{{ conteoAcceso(tipo) }}</span>
+        </button>
+      }
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha y hora</th>
+            <th>Usuario</th>
+            <th>Evento</th>
+            <th>Dirección IP</th>
+            <th>Motivo</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargandoAccesos && !accesosCargados) {
+            @for (fila of [1, 2, 3, 4]; track fila) {
+              <tr><td class="celda-skeleton" colspan="5"><span class="skeleton w-90"></span><span class="skeleton w-50"></span></td></tr>
+            }
+          } @else {
+            @for (acceso of accesosFiltrados | paginar: paginaAccesos : tamanoAccesos; track acceso.id) {
+              <tr>
+                <td class="col-principal">
+                  <div class="main-cell">
+                    <strong>{{ acceso.fecha | date: 'dd/MM/yyyy HH:mm:ss' }}</strong>
+                  </div>
+                </td>
+                <td data-label="Usuario" class="usuario">{{ acceso.userEntraId }}</td>
+                <td data-label="Evento">
+                  <span class="badge" [class]="configAcceso(acceso.event).badge">{{ configAcceso(acceso.event).etiqueta }}</span>
+                </td>
+                <td data-label="IP"><code class="trace">{{ acceso.ipAddress || '—' }}</code></td>
+                <td data-label="Motivo" class="sub-text">{{ acceso.failureReason || '—' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td class="empty-hint" colspan="5">
+                  <span class="material-icons empty-icon">key</span>
+                  <p>No hay eventos de acceso que coincidan con el filtro.</p>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-paginador [total]="accesosFiltrados.length" [(pagina)]="paginaAccesos" [(tamano)]="tamanoAccesos" />
+    <p class="form-hint panel-nota">ms-login conserva y expone los 50 eventos de acceso más recientes.</p>
+  </section>
+}
+
+<!-- Línea de tiempo de una orden -->
+@if (ordenTimeline !== null) {
+  <div class="overlay" (click)="cerrarTimeline()">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-timeline" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <h3 id="titulo-timeline">Orden #{{ ordenTimeline }}</h3>
+          @if (timeline.length) {
+            <span class="badge" [class]="claseEstado(timeline[timeline.length - 1].newStatus)">
+              {{ etiquetaEstado(timeline[timeline.length - 1].newStatus) }}
+            </span>
+          }
+        </div>
+        <button type="button" class="close-btn" (click)="cerrarTimeline()" aria-label="Cerrar">×</button>
+      </div>
+      <p class="modal-sub">
+        @if (timeline.length) {
+          {{ timeline.length }} cambios de estado
+          @if (duracionTotalTimeline) { · {{ duracionTotalTimeline }} desde el primer registro }
+        } @else {
+          Línea de tiempo de la orden
+        }
+      </p>
+
+      @if (cargandoTimeline) {
+        <span class="skeleton w-90"></span><span class="skeleton w-70"></span><span class="skeleton w-50"></span>
+      } @else if (errorTimeline) {
+        <div class="alert alert-danger" role="alert">
+          <span class="material-icons">error_outline</span>
+          <span>{{ errorTimeline }}</span>
+        </div>
+      } @else if (!timeline.length) {
+        <p class="sub-text">Esta orden no tiene eventos registrados en ms-report.</p>
+      } @else {
+        <ol class="timeline">
+          @for (paso of timeline; track paso.id; let i = $index; let ultimo = $last) {
+            <li class="paso" [class.ultimo]="ultimo">
+              <span class="paso-punto" [class]="claseEstado(paso.newStatus)" aria-hidden="true"></span>
+              <div class="paso-cuerpo">
+                <div class="paso-cabecera">
+                  <span class="badge" [class]="claseEstado(paso.newStatus)">{{ etiquetaEstado(paso.newStatus) }}</span>
+                  <time class="sub-text" [attr.datetime]="paso.occurredAt">{{ paso.occurredAt | date: 'dd/MM/yyyy HH:mm:ss' }}</time>
+                </div>
+                <div class="paso-detalle sub-text">
+                  @if (i > 0) { <span>+{{ formatearDuracion(timeline[i - 1].occurredAt, paso.occurredAt) }} desde {{ etiquetaEstado(timeline[i - 1].newStatus) | lowercase }}</span> }
+                  @if (paso.assignedTechnicianId) { <span>Técnico #{{ paso.assignedTechnicianId }}</span> }
+                  @if (paso.traceId) { <code class="trace">{{ paso.traceId }}</code> }
+                </div>
+              </div>
+            </li>
+          }
+        </ol>
+      }
+    </div>
+  </div>
+}

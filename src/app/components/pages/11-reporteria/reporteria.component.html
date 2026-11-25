@@ -1,0 +1,219 @@
+<header class="page-head">
+  <div class="page-head-text">
+    <h1>Reportería</h1>
+    <p>
+      {{ descripcionRango }}
+      @if (ultimaActualizacion) { · Actualizado a las {{ ultimaActualizacion | date: 'HH:mm:ss' }} }
+    </p>
+  </div>
+  <div class="page-head-actions">
+    <div class="rango" role="group" aria-label="Ventana de tiempo">
+      @for (opcion of rangos; track opcion.valor) {
+        <button type="button" class="chip" [class.activo]="rango === opcion.valor"
+          [attr.aria-pressed]="rango === opcion.valor" (click)="cambiarRango(opcion.valor)">
+          {{ opcion.etiqueta }}
+        </button>
+      }
+    </div>
+    <button class="btn-secondary" type="button" (click)="exportar()" [disabled]="!resumen || sinDatos">
+      <span class="material-icons">download</span> Exportar CSV
+    </button>
+    <button class="btn-refresh" type="button" (click)="cargar()" [disabled]="cargando" aria-label="Actualizar" data-tip="Actualizar">
+      <span class="material-icons" [class.rotating]="cargando">refresh</span>
+    </button>
+  </div>
+</header>
+
+@if (mensajeError) {
+  <div class="alert alert-danger" role="alert">
+    <span class="material-icons">error_outline</span>
+    <span>{{ mensajeError }}</span>
+    <button type="button" class="btn-secondary btn-sm" (click)="cargar()">Reintentar</button>
+  </div>
+}
+
+<!-- Indicadores de la ventana -->
+<section class="tiles" aria-label="Indicadores de la ventana">
+  <article class="tile">
+    <span class="tile-label">Órdenes creadas</span>
+    <strong class="tile-value">{{ resumen ? (resumen.totals.created | number) : '—' }}</strong>
+    <span class="tile-meta">{{ resumen ? (resumen.totals.distinctOrders | number) : 0 }} órdenes con movimiento</span>
+  </article>
+  <article class="tile">
+    <span class="tile-label">Órdenes cerradas</span>
+    <strong class="tile-value">{{ resumen ? (resumen.totals.closed | number) : '—' }}</strong>
+    <span class="tile-meta">
+      @if (tasaCierre !== null) { {{ tasaCierre }}% de las creadas en la ventana } @else { Sin órdenes creadas en la ventana }
+    </span>
+  </article>
+  <article class="tile">
+    <span class="tile-label">Resolución mediana</span>
+    <strong class="tile-value">{{ resumen ? formatearMinutos(resumen.resolution.p50Minutes) : '—' }}</strong>
+    <span class="tile-meta">
+      @if (resumen?.resolution?.samples) {
+        9 de cada 10 en menos de {{ formatearMinutos(resumen!.resolution.p90Minutes) }}
+      } @else {
+        Creada → Cerrada, sin cierres en la ventana
+      }
+    </span>
+  </article>
+  <article class="tile">
+    <span class="tile-label">Canceladas</span>
+    <strong class="tile-value">{{ resumen ? (resumen.totals.cancelled | number) : '—' }}</strong>
+    <span class="tile-meta">{{ resumen ? (resumen.totals.events | number) : 0 }} cambios de estado registrados</span>
+  </article>
+</section>
+
+<!-- Volumen por tramo -->
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <h2>Órdenes creadas y cerradas</h2>
+      <p>Por tramos de {{ resumen ? (resumen.bucketMinutes >= 60 ? resumen.bucketMinutes / 60 + ' h' : resumen.bucketMinutes + ' min') : '—' }}</p>
+    </div>
+    <div class="panel-head-actions">
+      <ul class="leyenda" aria-label="Leyenda">
+        <li><span class="leyenda-marca serie-1"></span>Creadas</li>
+        <li><span class="leyenda-marca serie-2"></span>Cerradas</li>
+      </ul>
+      <button type="button" class="btn-secondary btn-sm" (click)="verTabla = !verTabla" [attr.aria-pressed]="verTabla">
+        <span class="material-icons">{{ verTabla ? 'bar_chart' : 'table_rows' }}</span>
+        {{ verTabla ? 'Ver gráfico' : 'Ver tabla' }}
+      </button>
+    </div>
+  </div>
+
+  @if (cargando && !resumen) {
+    <div class="grafico-skeleton"><span class="skeleton w-90"></span><span class="skeleton w-70"></span><span class="skeleton w-50"></span></div>
+  } @else if (sinDatos) {
+    <div class="empty-hint">
+      <span class="material-icons empty-icon">insights</span>
+      <p>No hay cambios de estado de órdenes en {{ descripcionRango | lowercase }}. Prueba con una ventana más amplia.</p>
+    </div>
+  } @else if (verTabla) {
+    <div class="table-wrap">
+      <table class="tabla-compacta">
+        <thead>
+          <tr><th>Tramo</th><th class="num">Creadas</th><th class="num">Cerradas</th><th class="num">Canceladas</th></tr>
+        </thead>
+        <tbody>
+          @for (col of columnas; track col.indice) {
+            <tr>
+              <td>{{ etiquetaTramo(col.tramo) }}</td>
+              <td class="num">{{ col.tramo.created }}</td>
+              <td class="num">{{ col.tramo.closed }}</td>
+              <td class="num">{{ col.tramo.cancelled }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (resumen) {
+    <div class="grafico" (mouseleave)="columnaActiva = null">
+      <svg [attr.viewBox]="'0 0 ' + ancho + ' ' + alto" role="img"
+        [attr.aria-label]="'Órdenes creadas y cerradas, ' + descripcionRango">
+        <!-- Líneas guía y eje Y -->
+        @for (tick of ticksY; track tick.valor) {
+          <line class="guia" [class.base]="tick.valor === 0"
+            [attr.x1]="margen.izquierda" [attr.x2]="ancho - margen.derecha" [attr.y1]="tick.y" [attr.y2]="tick.y" />
+          <text class="eje" [attr.x]="margen.izquierda - 8" [attr.y]="tick.y + 4" text-anchor="end">{{ tick.valor }}</text>
+        }
+
+        @for (col of columnas; track col.indice) {
+          <g class="columna" [class.activa]="columnaActiva === col">
+            @if (columnaActiva === col) {
+              <rect class="resalte" [attr.x]="col.x" [attr.y]="margen.arriba" [attr.width]="col.ancho"
+                [attr.height]="alto - margen.arriba - margen.abajo" />
+            }
+            <path class="barra serie-1" [attr.d]="col.creadas.ruta" />
+            <path class="barra serie-2" [attr.d]="col.cerradas.ruta" />
+            @if (col.etiqueta) {
+              <text class="eje" [attr.x]="col.x + col.ancho / 2" [attr.y]="alto - 8" text-anchor="middle">{{ col.etiqueta }}</text>
+            }
+            <!-- Zona de interacción: toda la columna, más grande que las barras -->
+            <rect class="zona" [attr.x]="col.x" [attr.y]="margen.arriba" [attr.width]="col.ancho"
+              [attr.height]="alto - margen.arriba - margen.abajo + 20" tabindex="0"
+              [attr.aria-label]="etiquetaTramo(col.tramo) + ': ' + col.tramo.created + ' creadas, ' + col.tramo.closed + ' cerradas'"
+              (mouseenter)="columnaActiva = col" (focus)="columnaActiva = col" (blur)="columnaActiva = null" />
+          </g>
+        }
+      </svg>
+
+      @if (columnaActiva) {
+        <div class="tooltip" [style.left.%]="posicionTooltip" role="status">
+          <span class="tooltip-titulo">{{ etiquetaTramo(columnaActiva.tramo) }}</span>
+          <span class="tooltip-fila"><span class="tooltip-clave serie-1"></span><strong>{{ columnaActiva.tramo.created }}</strong> Creadas</span>
+          <span class="tooltip-fila"><span class="tooltip-clave serie-2"></span><strong>{{ columnaActiva.tramo.closed }}</strong> Cerradas</span>
+          @if (columnaActiva.tramo.cancelled) {
+            <span class="tooltip-fila tooltip-extra">{{ columnaActiva.tramo.cancelled }} canceladas</span>
+          }
+        </div>
+      }
+    </div>
+  }
+</section>
+
+<div class="grid-2">
+  <!-- Cambios de estado -->
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <h2>Cambios de estado</h2>
+        <p>Transiciones registradas en la ventana, por estado de destino</p>
+      </div>
+    </div>
+    <div class="estados">
+      @for (item of estados; track item.estado) {
+        <div class="estado-fila">
+          <span class="badge" [class]="claseEstado(item.estado)">{{ etiquetaEstado(item.estado) }}</span>
+          <div class="estado-barra" aria-hidden="true">
+            <div class="estado-relleno" [style.width.%]="item.porcentaje"></div>
+          </div>
+          <span class="estado-num"><strong>{{ item.cantidad | number }}</strong> <span class="sub-text">{{ item.porcentaje }}%</span></span>
+        </div>
+      }
+    </div>
+  </section>
+
+  <div class="columna-lateral">
+    <!-- Tiempo de resolución -->
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Tiempo de resolución</h2>
+          <p>{{ resumen?.resolution?.samples ?? 0 }} órdenes cerradas en la ventana</p>
+        </div>
+      </div>
+      <dl class="resolucion">
+        <div><dt>Promedio</dt><dd>{{ resumen ? formatearMinutos(resumen.resolution.avgMinutes) : '—' }}</dd></div>
+        <div><dt>Mediana (p50)</dt><dd>{{ resumen ? formatearMinutos(resumen.resolution.p50Minutes) : '—' }}</dd></div>
+        <div><dt>p90</dt><dd>{{ resumen ? formatearMinutos(resumen.resolution.p90Minutes) : '—' }}</dd></div>
+        <div><dt>Máximo</dt><dd>{{ resumen ? formatearMinutos(resumen.resolution.maxMinutes) : '—' }}</dd></div>
+      </dl>
+    </section>
+
+    <!-- Técnicos -->
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Técnicos con más cierres</h2>
+          <p>Top 5 de la ventana</p>
+        </div>
+      </div>
+      @if (resumen?.topTechnicians?.length) {
+        <ol class="ranking">
+          @for (tec of resumen!.topTechnicians; track tec.technicianId; let i = $index) {
+            <li>
+              <span class="ranking-pos">{{ i + 1 }}</span>
+              <span class="ranking-nombre">Técnico #{{ tec.technicianId }}</span>
+              <strong>{{ tec.closed }}</strong>
+              <span class="sub-text">{{ tec.closed === 1 ? 'cierre' : 'cierres' }}</span>
+            </li>
+          }
+        </ol>
+      } @else {
+        <p class="sub-text sin-ranking">Sin cierres con técnico asignado en la ventana.</p>
+      }
+    </section>
+  </div>
+</div>
