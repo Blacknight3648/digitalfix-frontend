@@ -40,23 +40,15 @@ export const routes: Routes = [
             },
             {
                 path: 'reports',
-                loadComponent: () => import('@components/pages/9-coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
+                loadComponent: () => import('@components/pages/11-reporteria/reporteria.component').then((m) => m.ReporteriaComponent),
                 canActivate: [roleGuard],
-                data: {
-                    title: 'Reportería',
-                    roles: ['ADMIN'],
-                    description: 'Órdenes por hora, tiempo de resolución y servicios más solicitados. Disponible cuando ms-digitalfix-report esté integrado.',
-                },
+                data: { title: 'Reportería', roles: ['ADMIN'] },
             },
             {
                 path: 'audit',
-                loadComponent: () => import('@components/pages/9-coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
+                loadComponent: () => import('@components/pages/12-auditoria/auditoria.component').then((m) => m.AuditoriaComponent),
                 canActivate: [roleGuard],
-                data: {
-                    title: 'Auditoría',
-                    roles: ['ADMIN', 'AUDITOR'],
-                    description: 'Timeline de eventos de las órdenes. Disponible cuando ms-digitalfix-audit esté integrado.',
-                },
+                data: { title: 'Auditoría', roles: ['ADMIN', 'AUDITOR'] },
             },
             {
                 path: 'usuarios',
